@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
 import { invoke } from '@tauri-apps/api/core'
+import { useEffect, useState } from 'react'
 import { AppConfig, MonitorInfo, WidgetConfig } from '../types'
-import { CloseIcon, CheckIcon, ChevronUpIcon, ChevronDownIcon, HexagonIcon } from './icons'
+import { ChevronDownIcon, ChevronUpIcon, CloseIcon } from './icons'
+import { AboutSection, MonitorCard } from './shared/SettingsShared'
 
 interface SettingsModalProps {
     isOpen: boolean
@@ -217,43 +218,18 @@ export function SettingsModal({ isOpen, onClose, config, onConfigChange }: Setti
                             <p className="settings-hint">Selecione em qual monitor a barra será exibida.</p>
                             <div className="monitor-list">
                                 {monitors.map(monitor => (
-                                    <button
+                                    <MonitorCard
                                         key={monitor.id}
-                                        className={`monitor-card ${localConfig.display.targetMonitor === monitor.id ? 'monitor-card--active' : ''}`}
-                                        onClick={() => updateDisplay('targetMonitor', monitor.id)}
-                                    >
-                                        <div className="monitor-card__name">{monitor.name}</div>
-                                        <div className="monitor-card__info">
-                                            {monitor.width}x{monitor.height}
-                                            {monitor.is_primary && <span className="badge">Principal</span>}
-                                        </div>
-                                        {localConfig.display.targetMonitor === monitor.id && (
-                                            <div className="monitor-card__check">
-                                                <CheckIcon />
-                                            </div>
-                                        )}
-                                    </button>
+                                        monitor={monitor}
+                                        isSelected={localConfig.display.targetMonitor === monitor.id}
+                                        onSelect={(id) => updateDisplay('targetMonitor', id)}
+                                    />
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {activeTab === 'about' && (
-                        <div className="settings-section about-section">
-                            <div className="about-logo"><HexagonIcon /></div>
-                            <h3 className="about-title">Bar Minimal Tools</h3>
-                            <p className="about-version">Versão 0.1.0</p>
-                            <p className="about-description">
-                                Uma barra de tarefas minimalista e personalizável para Windows,
-                                com monitoramento de hardware em tempo real.
-                            </p>
-                            <div className="about-tech">
-                                <span className="tech-badge">Tauri</span>
-                                <span className="tech-badge">React</span>
-                                <span className="tech-badge">Rust</span>
-                            </div>
-                        </div>
-                    )}
+                    {activeTab === 'about' && <AboutSection />}
                 </div>
 
                 <div className="modal__footer">

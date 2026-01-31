@@ -7,7 +7,8 @@ import '../../index.css'
 import { AppConfig, FolderShortcut, FolderShortcutsConfig, MonitorInfo, WidgetConfig } from '../../types'
 import { usePopupExit } from '../../utils/usePopupExit'
 import { getWidgetLabel, normalizeConfig } from '../../utils/widgets'
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon, CloseIcon, HexagonIcon, getFolderIconByName } from '../icons'
+import { ChevronDownIcon, ChevronUpIcon, CloseIcon, getFolderIconByName } from '../icons'
+import { AboutSection, MonitorCard } from '../shared/SettingsShared'
 
 type TabId = 'appearance' | 'widgets' | 'shortcuts' | 'monitor' | 'system' | 'about'
 
@@ -171,7 +172,7 @@ export function SettingsPopup() {
         if (key === 'barHeight') {
             const nextHeight = value as unknown as number
             // Update main UI immediately (CSS height)
-            emit('bar-height-preview', { barHeight: nextHeight }).catch(() => {})
+            emit('bar-height-preview', { barHeight: nextHeight }).catch(() => { })
 
             // Debounce backend resizing to keep it smooth
             if (heightPreviewTimerRef.current) {
@@ -179,7 +180,7 @@ export function SettingsPopup() {
             }
             heightPreviewTimerRef.current = window.setTimeout(() => {
                 // While dragging, only resize the bar window; avoid updating AppBar work-area every tick.
-                invoke('preview_taskbar_height', { barHeight: nextHeight, updateAppbar: false }).catch(() => {})
+                invoke('preview_taskbar_height', { barHeight: nextHeight, updateAppbar: false }).catch(() => { })
                 heightPreviewTimerRef.current = null
             }, 50)
         }
@@ -187,13 +188,13 @@ export function SettingsPopup() {
         // Live preview for opacity (frontend only)
         if (key === 'opacity') {
             const nextOpacity = value as unknown as number
-            emit('opacity-preview', { opacity: nextOpacity }).catch(() => {})
+            emit('opacity-preview', { opacity: nextOpacity }).catch(() => { })
         }
 
         // Live preview for blur toggle (frontend only)
         if (key === 'blur') {
             const nextBlur = value as unknown as boolean
-            emit('blur-preview', { blur: nextBlur }).catch(() => {})
+            emit('blur-preview', { blur: nextBlur }).catch(() => { })
         }
     }
 
@@ -406,7 +407,7 @@ export function SettingsPopup() {
                                         onChange={e => updateDisplay('barHeight', parseInt(e.target.value))}
                                         onPointerUp={() => {
                                             // On drag end, update the AppBar reserved area once to prevent flicker.
-                                            invoke('preview_taskbar_height', { barHeight: config.display.barHeight, updateAppbar: true }).catch(() => {})
+                                            invoke('preview_taskbar_height', { barHeight: config.display.barHeight, updateAppbar: true }).catch(() => { })
                                         }}
                                     />
                                     <span className="setting-value">{config.display.barHeight}px</span>
@@ -556,43 +557,18 @@ export function SettingsPopup() {
                             <p className="settings-hint">Selecione em qual monitor a barra será exibida.</p>
                             <div className="monitor-list">
                                 {monitors.map(monitor => (
-                                    <button
+                                    <MonitorCard
                                         key={monitor.id}
-                                        className={`monitor-card ${config.display.targetMonitor === monitor.id ? 'monitor-card--active' : ''}`}
-                                        onClick={() => updateDisplay('targetMonitor', monitor.id)}
-                                    >
-                                        <div className="monitor-card__name">{monitor.name}</div>
-                                        <div className="monitor-card__info">
-                                            {monitor.width}x{monitor.height}
-                                            {monitor.is_primary && <span className="badge">Principal</span>}
-                                        </div>
-                                        {config.display.targetMonitor === monitor.id && (
-                                            <div className="monitor-card__check">
-                                                <CheckIcon />
-                                            </div>
-                                        )}
-                                    </button>
+                                        monitor={monitor}
+                                        isSelected={config.display.targetMonitor === monitor.id}
+                                        onSelect={(id) => updateDisplay('targetMonitor', id)}
+                                    />
                                 ))}
                             </div>
                         </div>
                     )}
 
-                    {activeTab === 'about' && (
-                        <div className="settings-section about-section">
-                            <div className="about-logo"><HexagonIcon /></div>
-                            <h3 className="about-title">Bar Minimal Tools</h3>
-                            <p className="about-version">Versão 0.1.0</p>
-                            <p className="about-description">
-                                Uma barra de tarefas minimalista e personalizável para Windows,
-                                com monitoramento de hardware em tempo real.
-                            </p>
-                            <div className="about-tech">
-                                <span className="tech-badge">Tauri</span>
-                                <span className="tech-badge">React</span>
-                                <span className="tech-badge">Rust</span>
-                            </div>
-                        </div>
-                    )}
+                    {activeTab === 'about' && <AboutSection />}
 
                     {activeTab === 'system' && (
                         <div className="settings-section">
@@ -603,7 +579,7 @@ export function SettingsPopup() {
                                         <div className="setting-warning__content">
                                             <span className="setting-warning__title">Modo Limitado</span>
                                             <span className="setting-warning__text">
-                                                A aplicação está rodando sem privilégios de administrador. 
+                                                A aplicação está rodando sem privilégios de administrador.
                                                 Alguns recursos como reserva de espaço da barra (AppBar) podem não funcionar corretamente.
                                                 Para recursos completos, feche e execute como Administrador.
                                             </span>
