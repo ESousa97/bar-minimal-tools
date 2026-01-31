@@ -33,14 +33,14 @@ fn get_startup_folder() -> Result<PathBuf, String> {
         // Startup folder is: %APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
         let appdata = std::env::var("APPDATA")
             .map_err(|_| "Failed to get APPDATA environment variable".to_string())?;
-        
+
         let startup_path = PathBuf::from(appdata)
             .join("Microsoft")
             .join("Windows")
             .join("Start Menu")
             .join("Programs")
             .join("Startup");
-        
+
         Ok(startup_path)
     }
 
@@ -85,22 +85,19 @@ pub fn startup_enable(_app: AppHandle) -> Result<(), String> {
         // Clean up any legacy scheduled task from previous versions
         cleanup_legacy_scheduled_task();
 
-        let exe_path = std::env::current_exe()
-            .map_err(|e| format!("Failed to get exe path: {e}"))?;
-        
+        let exe_path =
+            std::env::current_exe().map_err(|e| format!("Failed to get exe path: {e}"))?;
+
         let exe_path_str = exe_path
             .to_str()
             .ok_or_else(|| "Executable path is not valid UTF-8".to_string())?;
 
         // Create a simple .bat file that starts the application
         // Using "start "" " to run detached (doesn't keep a console window open)
-        let bat_content = format!(
-            "@echo off\r\nstart \"\" \"{}\"\r\n",
-            exe_path_str
-        );
+        let bat_content = format!("@echo off\r\nstart \"\" \"{}\"\r\n", exe_path_str);
 
         let bat_path = get_bat_path()?;
-        
+
         // Ensure the startup folder exists (it should, but just in case)
         if let Some(parent) = bat_path.parent() {
             fs::create_dir_all(parent)
@@ -128,7 +125,7 @@ pub fn startup_disable() -> Result<(), String> {
         cleanup_legacy_scheduled_task();
 
         let bat_path = get_bat_path()?;
-        
+
         if bat_path.exists() {
             fs::remove_file(&bat_path)
                 .map_err(|e| format!("Failed to remove startup batch file: {e}"))?;
@@ -144,12 +141,14 @@ pub fn is_running_as_admin() -> bool {
     #[cfg(windows)]
     {
         use windows::Win32::Foundation::HANDLE;
-        use windows::Win32::Security::{GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY};
+        use windows::Win32::Security::{
+            GetTokenInformation, TokenElevation, TOKEN_ELEVATION, TOKEN_QUERY,
+        };
         use windows::Win32::System::Threading::{GetCurrentProcess, OpenProcessToken};
 
         unsafe {
             let mut token_handle = HANDLE::default();
-            
+
             if OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &mut token_handle).is_err() {
                 return false;
             }

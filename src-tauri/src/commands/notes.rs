@@ -39,7 +39,8 @@ fn save_notes(app: &AppHandle, notes: &[Note]) -> Result<(), String> {
     let path = notes_file_path(app)?;
     let tmp = path.with_extension("json.tmp");
 
-    let content = serde_json::to_string_pretty(notes).map_err(|e| format!("Failed to serialize notes: {e}"))?;
+    let content = serde_json::to_string_pretty(notes)
+        .map_err(|e| format!("Failed to serialize notes: {e}"))?;
     fs::write(&tmp, content).map_err(|e| format!("Failed to write temp notes file: {e}"))?;
 
     // Best-effort atomic-ish replace on Windows.
@@ -95,7 +96,12 @@ pub fn create_note(app: AppHandle, title: Option<String>) -> Result<Note, String
 
 /// Update a note by id.
 #[tauri::command]
-pub fn update_note(app: AppHandle, id: String, title: String, content: String) -> Result<Note, String> {
+pub fn update_note(
+    app: AppHandle,
+    id: String,
+    title: String,
+    content: String,
+) -> Result<Note, String> {
     let mut notes = load_notes(&app)?;
     let idx = notes
         .iter()

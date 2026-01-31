@@ -6,7 +6,7 @@
 //! - Rust-side interpolation for smooth timeline (avoids 51<->52 oscillation)
 //! - Frontend uses requestAnimationFrame for 60fps smooth UI
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// Playback status
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -59,16 +59,16 @@ impl Default for MediaData {
 #[cfg(windows)]
 mod windows_impl {
     use super::*;
+    use base64::{engine::general_purpose::STANDARD as BASE64, Engine as _};
+    use std::sync::{Mutex, OnceLock};
+    use std::time::{Duration, Instant};
     use windows::Media::Control::{
         GlobalSystemMediaTransportControlsSessionManager,
         GlobalSystemMediaTransportControlsSessionPlaybackStatus,
     };
     use windows::Storage::Streams::DataReader;
-    use std::sync::{Mutex, OnceLock};
-    use std::time::{Duration, Instant};
-    use base64::{Engine as _, engine::general_purpose::STANDARD as BASE64};
     use windows::Win32::System::Com::{CoInitializeEx, COINIT_MULTITHREADED};
-    
+
     // Background thread polls SMTC and caches the result.
     // We keep an interpolation model in Rust to avoid UI jitter (e.g. 51<->52 loops)
     // caused by small timeline quantization / update cadence differences.
@@ -103,7 +103,10 @@ mod windows_impl {
     }
 
     fn make_track_key(media: &MediaData) -> String {
-        format!("{}|{}|{}|{}", media.source_app, media.title, media.artist, media.album)
+        format!(
+            "{}|{}|{}|{}",
+            media.source_app, media.title, media.artist, media.album
+        )
     }
 
     fn estimated_position(cache: &MediaCache) -> f64 {
@@ -184,7 +187,7 @@ mod windows_impl {
         cache.duration = new_dur;
         cache.media = media;
     }
-    
+
     pub fn get_media_data() -> MediaData {
         start_background_refresh();
 
@@ -226,7 +229,7 @@ mod windows_impl {
             })
             .ok();
     }
-    
+
     fn fetch_media_data_internal() -> MediaData {
         // Request session manager
         let manager = match GlobalSystemMediaTransportControlsSessionManager::RequestAsync() {
@@ -236,49 +239,65 @@ mod windows_impl {
             },
             Err(_) => return MediaData::default(),
         };
-        
+
         let session = match manager.GetCurrentSession() {
             Ok(s) => s,
             Err(_) => return MediaData::default(),
         };
-        
+
         // Get source app info
-        let source_app = session.SourceAppUserModelId()
+        let source_app = session
+            .SourceAppUserModelId()
             .map(|s| s.to_string())
             .unwrap_or_default();
-        
+
         let source_app = extract_app_name(&source_app);
-        
+
         // Get playback info
         let playback_info = match session.GetPlaybackInfo() {
             Ok(info) => info,
-            Err(_) => return MediaData { has_media: false, source_app, ..Default::default() },
+            Err(_) => {
+                return MediaData {
+                    has_media: false,
+                    source_app,
+                    ..Default::default()
+                }
+            }
         };
-        
+
         let status = match playback_info.PlaybackStatus() {
             Ok(s) => match s {
-                GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing => PlaybackStatus::Playing,
-                GlobalSystemMediaTransportControlsSessionPlaybackStatus::Paused => PlaybackStatus::Paused,
-                GlobalSystemMediaTransportControlsSessionPlaybackStatus::Stopped => PlaybackStatus::Stopped,
+                GlobalSystemMediaTransportControlsSessionPlaybackStatus::Playing => {
+                    PlaybackStatus::Playing
+                }
+                GlobalSystemMediaTransportControlsSessionPlaybackStatus::Paused => {
+                    PlaybackStatus::Paused
+                }
+                GlobalSystemMediaTransportControlsSessionPlaybackStatus::Stopped => {
+                    PlaybackStatus::Stopped
+                }
                 _ => PlaybackStatus::Unknown,
             },
             Err(_) => PlaybackStatus::Unknown,
         };
-        
+
         // Get media properties
         let (title, artist, album) = match session.TryGetMediaPropertiesAsync() {
             Ok(op) => match op.get() {
                 Ok(props) => {
                     let t = props.Title().map(|s| s.to_string()).unwrap_or_default();
                     let a = props.Artist().map(|s| s.to_string()).unwrap_or_default();
-                    let al = props.AlbumTitle().map(|s| s.to_string()).unwrap_or_default();
+                    let al = props
+                        .AlbumTitle()
+                        .map(|s| s.to_string())
+                        .unwrap_or_default();
                     (t, a, al)
-                },
+                }
                 Err(_) => (String::new(), String::new(), String::new()),
             },
             Err(_) => (String::new(), String::new(), String::new()),
         };
-        
+
         // Get timeline properties (raw values). We smooth/interpolate in Rust.
         // IMPORTANT: SMTC Position() returns the position at LastUpdatedTime, NOT current position.
         // We must add the elapsed time since LastUpdatedTime to get the real current position.
@@ -292,27 +311,28 @@ mod windows_impl {
                     .EndTime()
                     .map(|d| d.Duration as f64 / 10_000_000.0)
                     .unwrap_or(0.0);
-                
+
                 // Get LastUpdatedTime and calculate real position
                 let real_pos = if status == PlaybackStatus::Playing {
                     if let Ok(last_updated) = timeline.LastUpdatedTime() {
                         // LastUpdatedTime is a DateTime (100-nanosecond intervals since Jan 1, 1601)
                         // Get current time in same format
                         use windows::Win32::System::SystemInformation::GetSystemTimeAsFileTime;
-                        
+
                         let now_ft = unsafe { GetSystemTimeAsFileTime() };
-                        
+
                         // Convert FILETIME to i64 (100-ns units)
-                        let now_ticks = ((now_ft.dwHighDateTime as i64) << 32) | (now_ft.dwLowDateTime as i64);
+                        let now_ticks =
+                            ((now_ft.dwHighDateTime as i64) << 32) | (now_ft.dwLowDateTime as i64);
                         let last_ticks = last_updated.UniversalTime;
-                        
+
                         // Calculate elapsed seconds since last update
                         let elapsed_ticks = now_ticks - last_ticks;
                         let elapsed_seconds = elapsed_ticks as f64 / 10_000_000.0;
-                        
+
                         // Real position = reported position + elapsed time
                         let calculated = pos + elapsed_seconds;
-                        
+
                         // Clamp to valid range
                         if calculated < 0.0 {
                             0.0
@@ -328,21 +348,22 @@ mod windows_impl {
                     // When paused, position is accurate
                     pos
                 };
-                
+
                 (real_pos, dur)
             }
             Err(_) => (0.0, 0.0),
         };
-        
+
         let has_media = !title.is_empty() || status == PlaybackStatus::Playing;
-        
+
         // Get thumbnail for browsers (YouTube, etc)
-        let thumbnail_base64 = if source_app == "Chrome" || source_app == "Firefox" || source_app == "Edge" {
-            get_thumbnail(&session)
-        } else {
-            None
-        };
-        
+        let thumbnail_base64 =
+            if source_app == "Chrome" || source_app == "Firefox" || source_app == "Edge" {
+                get_thumbnail(&session)
+            } else {
+                None
+            };
+
         MediaData {
             has_media,
             title,
@@ -355,26 +376,29 @@ mod windows_impl {
             duration_seconds,
         }
     }
-    
-    fn get_thumbnail(session: &windows::Media::Control::GlobalSystemMediaTransportControlsSession) -> Option<String> {
+
+    fn get_thumbnail(
+        session: &windows::Media::Control::GlobalSystemMediaTransportControlsSession,
+    ) -> Option<String> {
         let props = session.TryGetMediaPropertiesAsync().ok()?.get().ok()?;
         let thumbnail_ref = props.Thumbnail().ok()?;
         let stream = thumbnail_ref.OpenReadAsync().ok()?.get().ok()?;
-        
+
         let size = stream.Size().ok()? as usize;
-        if size == 0 || size > 1024 * 1024 { // Skip if empty or > 1MB
+        if size == 0 || size > 1024 * 1024 {
+            // Skip if empty or > 1MB
             return None;
         }
-        
+
         let reader = DataReader::CreateDataReader(&stream).ok()?;
         reader.LoadAsync(size as u32).ok()?.get().ok()?;
-        
+
         let mut buffer = vec![0u8; size];
         reader.ReadBytes(&mut buffer).ok()?;
-        
+
         Some(BASE64.encode(&buffer))
     }
-    
+
     fn extract_app_name(app_id: &str) -> String {
         // Extract readable app name from app model ID
         if app_id.contains("Spotify") {
@@ -398,82 +422,84 @@ mod windows_impl {
         if app_id.contains("foobar") {
             return "foobar2000".to_string();
         }
-        
+
         // Return last part of app ID or the whole thing
-        app_id.split('!').next()
+        app_id
+            .split('!')
+            .next()
             .and_then(|s| s.split('\\').last())
             .unwrap_or(app_id)
             .to_string()
     }
-    
+
     pub fn play_pause() -> Result<(), String> {
         let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
             .map_err(|e| e.to_string())?
             .get()
             .map_err(|e| e.to_string())?;
-        
-        let session = manager.GetCurrentSession()
-            .map_err(|e| e.to_string())?;
-        
-        session.TryTogglePlayPauseAsync()
+
+        let session = manager.GetCurrentSession().map_err(|e| e.to_string())?;
+
+        session
+            .TryTogglePlayPauseAsync()
             .map_err(|e| e.to_string())?
             .get()
             .map_err(|e| e.to_string())?;
-        
+
         Ok(())
     }
-    
+
     pub fn next_track() -> Result<(), String> {
         let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
             .map_err(|e| e.to_string())?
             .get()
             .map_err(|e| e.to_string())?;
-        
-        let session = manager.GetCurrentSession()
-            .map_err(|e| e.to_string())?;
-        
-        session.TrySkipNextAsync()
+
+        let session = manager.GetCurrentSession().map_err(|e| e.to_string())?;
+
+        session
+            .TrySkipNextAsync()
             .map_err(|e| e.to_string())?
             .get()
             .map_err(|e| e.to_string())?;
-        
+
         Ok(())
     }
-    
+
     pub fn previous_track() -> Result<(), String> {
         let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
             .map_err(|e| e.to_string())?
             .get()
             .map_err(|e| e.to_string())?;
-        
-        let session = manager.GetCurrentSession()
-            .map_err(|e| e.to_string())?;
-        
-        session.TrySkipPreviousAsync()
+
+        let session = manager.GetCurrentSession().map_err(|e| e.to_string())?;
+
+        session
+            .TrySkipPreviousAsync()
             .map_err(|e| e.to_string())?
             .get()
             .map_err(|e| e.to_string())?;
-        
+
         Ok(())
     }
-    
+
     pub fn seek_to_position(position_seconds: f64) -> Result<(), String> {
         let manager = GlobalSystemMediaTransportControlsSessionManager::RequestAsync()
             .map_err(|e| e.to_string())?
             .get()
             .map_err(|e| e.to_string())?;
-        
-        let session = manager.GetCurrentSession()
-            .map_err(|e| e.to_string())?;
-        
+
+        let session = manager.GetCurrentSession().map_err(|e| e.to_string())?;
+
         // Convert seconds to 100-nanosecond units (Windows TimeSpan format)
         let position_ticks = (position_seconds * 10_000_000.0) as i64;
-        
-        session.TryChangePlaybackPositionAsync(position_ticks)
+
+        session
+            .TryChangePlaybackPositionAsync(position_ticks)
             .map_err(|e| e.to_string())?
             .get()
             .map_err(|e| e.to_string())?;
-        
+
         // Update cache immediately for responsive UI; background poll will confirm.
         if let Ok(mut cache) = get_state().lock() {
             if cache.media.has_media {

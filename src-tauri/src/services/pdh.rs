@@ -14,7 +14,7 @@ use windows::Win32::Foundation::ERROR_SUCCESS;
 
 #[cfg(windows)]
 use windows::Win32::System::Performance::{
-    PdhAddEnglishCounterW, PdhCollectQueryData, PdhCloseQuery, PdhGetFormattedCounterArrayW,
+    PdhAddEnglishCounterW, PdhCloseQuery, PdhCollectQueryData, PdhGetFormattedCounterArrayW,
     PdhGetFormattedCounterValue, PdhOpenQueryW, PDH_FMT_COUNTERVALUE, PDH_FMT_COUNTERVALUE_ITEM_W,
     PDH_FMT_DOUBLE,
 };

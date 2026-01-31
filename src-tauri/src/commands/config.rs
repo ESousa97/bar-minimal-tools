@@ -1,8 +1,8 @@
 //! Profile-based configuration management
 
 use serde::{Deserialize, Serialize};
-use std::path::PathBuf;
 use std::fs;
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -71,10 +71,18 @@ pub struct WeatherConfig {
     pub city_name: String,
 }
 
-fn default_true() -> bool { true }
-fn default_latitude() -> f64 { -23.5505 }
-fn default_longitude() -> f64 { -46.6333 }
-fn default_city() -> String { "São Paulo".to_string() }
+fn default_true() -> bool {
+    true
+}
+fn default_latitude() -> f64 {
+    -23.5505
+}
+fn default_longitude() -> f64 {
+    -46.6333
+}
+fn default_city() -> String {
+    "São Paulo".to_string()
+}
 
 /// Single folder shortcut entry
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -181,16 +189,66 @@ impl AppConfig {
             modified_at: now,
             display: DisplayConfig::default(),
             widgets: vec![
-                WidgetConfig { id: "cpu-1".to_string(), widget_type: "cpu".to_string(), enabled: true, order: 0 },
-                WidgetConfig { id: "ram-1".to_string(), widget_type: "ram".to_string(), enabled: true, order: 1 },
-                WidgetConfig { id: "gpu-1".to_string(), widget_type: "gpu".to_string(), enabled: true, order: 2 },
-                WidgetConfig { id: "storage-1".to_string(), widget_type: "storage".to_string(), enabled: true, order: 3 },
-                WidgetConfig { id: "network-1".to_string(), widget_type: "network".to_string(), enabled: true, order: 4 },
-                WidgetConfig { id: "media-1".to_string(), widget_type: "media".to_string(), enabled: true, order: 5 },
-                WidgetConfig { id: "audio-1".to_string(), widget_type: "audio".to_string(), enabled: true, order: 90 },
-                WidgetConfig { id: "headset-1".to_string(), widget_type: "headset".to_string(), enabled: true, order: 91 },
-                WidgetConfig { id: "weather-1".to_string(), widget_type: "weather".to_string(), enabled: true, order: 92 },
-                WidgetConfig { id: "clock-1".to_string(), widget_type: "clock".to_string(), enabled: true, order: 93 },
+                WidgetConfig {
+                    id: "cpu-1".to_string(),
+                    widget_type: "cpu".to_string(),
+                    enabled: true,
+                    order: 0,
+                },
+                WidgetConfig {
+                    id: "ram-1".to_string(),
+                    widget_type: "ram".to_string(),
+                    enabled: true,
+                    order: 1,
+                },
+                WidgetConfig {
+                    id: "gpu-1".to_string(),
+                    widget_type: "gpu".to_string(),
+                    enabled: true,
+                    order: 2,
+                },
+                WidgetConfig {
+                    id: "storage-1".to_string(),
+                    widget_type: "storage".to_string(),
+                    enabled: true,
+                    order: 3,
+                },
+                WidgetConfig {
+                    id: "network-1".to_string(),
+                    widget_type: "network".to_string(),
+                    enabled: true,
+                    order: 4,
+                },
+                WidgetConfig {
+                    id: "media-1".to_string(),
+                    widget_type: "media".to_string(),
+                    enabled: true,
+                    order: 5,
+                },
+                WidgetConfig {
+                    id: "audio-1".to_string(),
+                    widget_type: "audio".to_string(),
+                    enabled: true,
+                    order: 90,
+                },
+                WidgetConfig {
+                    id: "headset-1".to_string(),
+                    widget_type: "headset".to_string(),
+                    enabled: true,
+                    order: 91,
+                },
+                WidgetConfig {
+                    id: "weather-1".to_string(),
+                    widget_type: "weather".to_string(),
+                    enabled: true,
+                    order: 92,
+                },
+                WidgetConfig {
+                    id: "clock-1".to_string(),
+                    widget_type: "clock".to_string(),
+                    enabled: true,
+                    order: 93,
+                },
             ],
             polling: PollingConfig::default(),
             weather: WeatherConfig::default(),
@@ -232,7 +290,13 @@ fn get_active_profile_name() -> String {
 
 fn sanitize_filename(name: &str) -> String {
     name.chars()
-        .map(|c| if c.is_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect::<String>()
         .to_lowercase()
 }
@@ -241,29 +305,29 @@ fn sanitize_filename(name: &str) -> String {
 #[tauri::command]
 pub fn list_profiles() -> Result<Vec<ProfileSummary>, String> {
     let dir = get_profiles_dir();
-    
+
     // Ensure profiles directory exists with default profile
     if !dir.exists() {
         ensure_default_profile(&dir)?;
     }
-    
+
     let active = get_active_profile_name();
-    
+
     let profiles = fs::read_dir(&dir)
         .map_err(|e| e.to_string())?
         .filter_map(|entry| {
             let entry = entry.ok()?;
             let path = entry.path();
             let ext = path.extension()?.to_str()?;
-            
+
             if ext != "json" {
                 return None;
             }
-            
+
             let content = fs::read_to_string(&path).ok()?;
             let config: serde_json::Value = serde_json::from_str(&content).ok()?;
             let filename = path.file_stem()?.to_str()?.to_string();
-            
+
             Some(ProfileSummary {
                 is_active: filename == active,
                 filename,
@@ -272,7 +336,7 @@ pub fn list_profiles() -> Result<Vec<ProfileSummary>, String> {
             })
         })
         .collect();
-    
+
     Ok(profiles)
 }
 
@@ -281,18 +345,18 @@ pub fn list_profiles() -> Result<Vec<ProfileSummary>, String> {
 pub fn create_profile(name: String) -> Result<String, String> {
     let dir = get_profiles_dir();
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-    
+
     let filename = sanitize_filename(&name);
     let path = dir.join(format!("{}.json", filename));
-    
+
     if path.exists() {
         return Err("Profile already exists".to_string());
     }
-    
+
     let config = AppConfig::default_with_name(&name);
     let content = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
     fs::write(&path, content).map_err(|e| e.to_string())?;
-    
+
     Ok(filename)
 }
 
@@ -301,14 +365,14 @@ pub fn create_profile(name: String) -> Result<String, String> {
 pub fn switch_profile(filename: String) -> Result<AppConfig, String> {
     let dir = get_profiles_dir();
     let path = dir.join(format!("{}.json", filename));
-    
+
     if !path.exists() {
         return Err("Profile not found".to_string());
     }
-    
+
     // Update active profile marker
     fs::write(dir.join("_active.txt"), &filename).map_err(|e| e.to_string())?;
-    
+
     // Load and return profile
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     serde_json::from_str(&content).map_err(|e| e.to_string())
@@ -320,13 +384,13 @@ pub fn save_current_profile(config: AppConfig) -> Result<(), String> {
     let dir = get_profiles_dir();
     let active = get_active_profile_name();
     let path = dir.join(format!("{}.json", active));
-    
+
     let mut updated = config;
     updated.modified_at = chrono::Utc::now().to_rfc3339();
-    
+
     let content = serde_json::to_string_pretty(&updated).map_err(|e| e.to_string())?;
     fs::write(&path, content).map_err(|e| e.to_string())?;
-    
+
     Ok(())
 }
 
@@ -336,7 +400,7 @@ pub fn get_active_profile() -> Result<AppConfig, String> {
     let dir = get_profiles_dir();
     let active = get_active_profile_name();
     let path = dir.join(format!("{}.json", active));
-    
+
     if !path.exists() {
         // Create default if doesn't exist
         let config = AppConfig::default();
@@ -346,7 +410,7 @@ pub fn get_active_profile() -> Result<AppConfig, String> {
         fs::write(dir.join("_active.txt"), "default").map_err(|e| e.to_string())?;
         return Ok(config);
     }
-    
+
     let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
     serde_json::from_str(&content).map_err(|e| e.to_string())
 }
@@ -364,11 +428,11 @@ pub fn export_profile(filename: String, destination: String) -> Result<(), Strin
 pub fn import_profile(source: String) -> Result<String, String> {
     let content = fs::read_to_string(&source).map_err(|e| e.to_string())?;
     let config: AppConfig = serde_json::from_str(&content).map_err(|e| e.to_string())?;
-    
+
     let filename = sanitize_filename(&config.profile_name);
     let dest = get_profiles_dir().join(format!("{}.json", filename));
     fs::write(&dest, &content).map_err(|e| e.to_string())?;
-    
+
     Ok(filename)
 }
 
@@ -378,21 +442,21 @@ pub fn save_weather_config(weather: WeatherConfig) -> Result<(), String> {
     let dir = get_profiles_dir();
     let active = get_active_profile_name();
     let path = dir.join(format!("{}.json", active));
-    
+
     let mut config = if path.exists() {
         let content = fs::read_to_string(&path).map_err(|e| e.to_string())?;
         serde_json::from_str::<AppConfig>(&content).map_err(|e| e.to_string())?
     } else {
         AppConfig::default()
     };
-    
+
     config.weather = weather;
     config.modified_at = chrono::Utc::now().to_rfc3339();
-    
+
     fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let content = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
     fs::write(&path, content).map_err(|e| e.to_string())?;
-    
+
     Ok(())
 }
 

@@ -1,6 +1,6 @@
 //! Weather commands for Tauri
 
-use crate::services::weather::{self, WeatherData, LocationData};
+use crate::services::weather::{self, LocationData, WeatherData};
 
 /// Get current weather data by coordinates
 #[tauri::command]

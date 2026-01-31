@@ -1,7 +1,7 @@
 //! CPU monitoring service using Windows APIs
 
-use serde::Serialize;
 use crate::services::wmi_service::CachedSystemData;
+use serde::Serialize;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct CpuData {
@@ -44,49 +44,49 @@ impl Default for CpuData {
 /// Get CPU information using cached WMI data
 pub fn get_cpu_info_cached(cached: &CachedSystemData) -> CpuData {
     let mut data = CpuData::default();
-    
+
     // Get system info for core count
     #[cfg(windows)]
     {
         use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
-        
+
         let mut sys_info = SYSTEM_INFO::default();
         unsafe { GetSystemInfo(&mut sys_info) };
         data.logical_cores = sys_info.dwNumberOfProcessors;
         data.physical_cores = sys_info.dwNumberOfProcessors;
     }
-    
+
     // Use cached WMI data
     data.name = cached.cpu_name.clone();
     data.total_usage = cached.cpu_usage;
     if cached.cpu_clock_mhz > 0 {
         data.clock_mhz = Some(cached.cpu_clock_mhz);
     }
-    
+
     // Temperature from WMI thermal zone
     data.temperature_c = cached.cpu_temperature_c;
-    
+
     // Fallback for empty name
     if data.name.is_empty() {
         data.name = "Loading...".to_string();
     }
-    
+
     data
 }
 
 /// Legacy sync function - now just returns defaults quickly
 pub fn get_cpu_info() -> Result<CpuData, String> {
     let mut data = CpuData::default();
-    
+
     #[cfg(windows)]
     {
         use windows::Win32::System::SystemInformation::{GetSystemInfo, SYSTEM_INFO};
-        
+
         let mut sys_info = SYSTEM_INFO::default();
         unsafe { GetSystemInfo(&mut sys_info) };
         data.logical_cores = sys_info.dwNumberOfProcessors;
         data.physical_cores = sys_info.dwNumberOfProcessors;
     }
-    
+
     Ok(data)
 }

@@ -1,7 +1,7 @@
 //! Windows native thermal monitoring via WMI (ACPI + Perf Counters)
 
 use std::collections::HashMap;
-use wmi::{COMLibrary, WMIConnection, Variant};
+use wmi::{COMLibrary, Variant, WMIConnection};
 
 /// Query ACPI thermal zone temperature (system thermal zone)
 pub fn query_acpi_temperature() -> Result<f32, String> {

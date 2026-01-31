@@ -2,18 +2,15 @@
 
 use serde::Serialize;
 use windows::{
-    core::{PCWSTR, PROPVARIANT, GUID, HRESULT, Interface, IUnknown},
+    core::{IUnknown, Interface, GUID, HRESULT, PCWSTR, PROPVARIANT},
     Win32::{
         Devices::FunctionDiscovery::PKEY_Device_FriendlyName,
         Media::Audio::{
-            eConsole, eRender, eCapture,
-            Endpoints::IAudioEndpointVolume,
-            IMMDevice, IMMDeviceCollection, IMMDeviceEnumerator,
-            MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
+            eCapture, eConsole, eRender, Endpoints::IAudioEndpointVolume, IMMDevice,
+            IMMDeviceCollection, IMMDeviceEnumerator, MMDeviceEnumerator, DEVICE_STATE_ACTIVE,
         },
         System::Com::{
-            CoCreateInstance, CoInitializeEx, CLSCTX_ALL,
-            COINIT_MULTITHREADED, STGM_READ,
+            CoCreateInstance, CoInitializeEx, CLSCTX_ALL, COINIT_MULTITHREADED, STGM_READ,
         },
         UI::Shell::PropertiesSystem::IPropertyStore,
     },
@@ -61,8 +58,11 @@ struct IPolicyConfig_Vtbl {
     pub _unused8: unsafe extern "system" fn(*mut core::ffi::c_void) -> HRESULT,
     pub _unused9: unsafe extern "system" fn(*mut core::ffi::c_void) -> HRESULT,
 
-    pub SetDefaultEndpoint:
-        unsafe extern "system" fn(this: *mut core::ffi::c_void, device_id: PCWSTR, role: ERole) -> HRESULT,
+    pub SetDefaultEndpoint: unsafe extern "system" fn(
+        this: *mut core::ffi::c_void,
+        device_id: PCWSTR,
+        role: ERole,
+    ) -> HRESULT,
 }
 
 // CLSID for PolicyConfigClient
@@ -119,12 +119,12 @@ unsafe fn get_device_name(device: &IMMDevice) -> String {
         Ok(s) => s,
         Err(_) => return "Unknown Device".to_string(),
     };
-    
+
     let prop: PROPVARIANT = match store.GetValue(&PKEY_Device_FriendlyName) {
         Ok(p) => p,
         Err(_) => return "Unknown Device".to_string(),
     };
-    
+
     // Convert PROPVARIANT to string - returns String directly via Display trait
     let name = prop.to_string();
     if name.is_empty() {
@@ -155,7 +155,9 @@ unsafe fn get_device_id(device: &IMMDevice) -> String {
 
 /// Get volume endpoint from device
 unsafe fn get_volume_endpoint(device: &IMMDevice) -> Option<IAudioEndpointVolume> {
-    device.Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None).ok()
+    device
+        .Activate::<IAudioEndpointVolume>(CLSCTX_ALL, None)
+        .ok()
 }
 
 /// Get audio devices of a specific type
@@ -166,31 +168,35 @@ unsafe fn get_devices_by_type(
     device_type: &str,
 ) -> Vec<AudioDevice> {
     let mut devices = Vec::new();
-    
-    let collection: IMMDeviceCollection = match enumerator.EnumAudioEndpoints(data_flow, DEVICE_STATE_ACTIVE) {
-        Ok(c) => c,
-        Err(_) => return devices,
-    };
-    
+
+    let collection: IMMDeviceCollection =
+        match enumerator.EnumAudioEndpoints(data_flow, DEVICE_STATE_ACTIVE) {
+            Ok(c) => c,
+            Err(_) => return devices,
+        };
+
     let count = match collection.GetCount() {
         Ok(c) => c,
         Err(_) => return devices,
     };
-    
+
     for i in 0..count {
         if let Ok(device) = collection.Item(i) {
             let id = get_device_id(&device);
             let name = get_device_name(&device);
             let is_default = default_id.as_ref().map_or(false, |d| d == &id);
-            
+
             let (volume, is_muted) = if let Some(endpoint) = get_volume_endpoint(&device) {
                 let vol = endpoint.GetMasterVolumeLevelScalar().unwrap_or(1.0);
-                let muted = endpoint.GetMute().unwrap_or(windows::Win32::Foundation::FALSE).as_bool();
+                let muted = endpoint
+                    .GetMute()
+                    .unwrap_or(windows::Win32::Foundation::FALSE)
+                    .as_bool();
                 ((vol * 100.0) as u32, muted)
             } else {
                 (100, false)
             };
-            
+
             devices.push(AudioDevice {
                 id,
                 name,
@@ -201,7 +207,7 @@ unsafe fn get_devices_by_type(
             });
         }
     }
-    
+
     devices
 }
 
@@ -210,47 +216,49 @@ pub fn get_audio_data() -> AudioData {
     unsafe {
         // Initialize COM
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-        
-        let enumerator: IMMDeviceEnumerator = match CoCreateInstance(
-            &MMDeviceEnumerator,
-            None,
-            CLSCTX_ALL,
-        ) {
-            Ok(e) => e,
-            Err(_) => return AudioData::default(),
-        };
-        
+
+        let enumerator: IMMDeviceEnumerator =
+            match CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL) {
+                Ok(e) => e,
+                Err(_) => return AudioData::default(),
+            };
+
         // Get default output device ID
         let default_output_id = enumerator
             .GetDefaultAudioEndpoint(eRender, eConsole)
             .ok()
             .map(|d| get_device_id(&d));
-        
+
         // Get default input device ID
         let default_input_id = enumerator
             .GetDefaultAudioEndpoint(eCapture, eConsole)
             .ok()
             .map(|d| get_device_id(&d));
-        
+
         // Get master volume from default output
-        let (master_volume, is_muted) = if let Ok(default_device) = enumerator.GetDefaultAudioEndpoint(eRender, eConsole) {
-            if let Some(endpoint) = get_volume_endpoint(&default_device) {
-                let vol = endpoint.GetMasterVolumeLevelScalar().unwrap_or(1.0);
-                let muted = endpoint.GetMute().unwrap_or(windows::Win32::Foundation::FALSE).as_bool();
-                ((vol * 100.0) as u32, muted)
+        let (master_volume, is_muted) =
+            if let Ok(default_device) = enumerator.GetDefaultAudioEndpoint(eRender, eConsole) {
+                if let Some(endpoint) = get_volume_endpoint(&default_device) {
+                    let vol = endpoint.GetMasterVolumeLevelScalar().unwrap_or(1.0);
+                    let muted = endpoint
+                        .GetMute()
+                        .unwrap_or(windows::Win32::Foundation::FALSE)
+                        .as_bool();
+                    ((vol * 100.0) as u32, muted)
+                } else {
+                    (100, false)
+                }
             } else {
                 (100, false)
-            }
-        } else {
-            (100, false)
-        };
-        
+            };
+
         // Get all output devices
-        let output_devices = get_devices_by_type(&enumerator, eRender, &default_output_id, "output");
-        
+        let output_devices =
+            get_devices_by_type(&enumerator, eRender, &default_output_id, "output");
+
         // Get all input devices
         let input_devices = get_devices_by_type(&enumerator, eCapture, &default_input_id, "input");
-        
+
         AudioData {
             output_devices,
             input_devices,
@@ -266,25 +274,23 @@ pub fn get_audio_data() -> AudioData {
 pub fn set_master_volume(volume: u32) -> Result<(), String> {
     unsafe {
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-        
-        let enumerator: IMMDeviceEnumerator = CoCreateInstance(
-            &MMDeviceEnumerator,
-            None,
-            CLSCTX_ALL,
-        ).map_err(|e| e.to_string())?;
-        
+
+        let enumerator: IMMDeviceEnumerator =
+            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(|e| e.to_string())?;
+
         let device = enumerator
             .GetDefaultAudioEndpoint(eRender, eConsole)
             .map_err(|e| e.to_string())?;
-        
+
         let endpoint: IAudioEndpointVolume = device
             .Activate(CLSCTX_ALL, None)
             .map_err(|e| e.to_string())?;
-        
+
         let level = (volume.min(100) as f32) / 100.0;
-        endpoint.SetMasterVolumeLevelScalar(level, std::ptr::null())
+        endpoint
+            .SetMasterVolumeLevelScalar(level, std::ptr::null())
             .map_err(|e| e.to_string())?;
-        
+
         Ok(())
     }
 }
@@ -293,29 +299,25 @@ pub fn set_master_volume(volume: u32) -> Result<(), String> {
 pub fn toggle_mute() -> Result<bool, String> {
     unsafe {
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-        
-        let enumerator: IMMDeviceEnumerator = CoCreateInstance(
-            &MMDeviceEnumerator,
-            None,
-            CLSCTX_ALL,
-        ).map_err(|e| e.to_string())?;
-        
+
+        let enumerator: IMMDeviceEnumerator =
+            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(|e| e.to_string())?;
+
         let device = enumerator
             .GetDefaultAudioEndpoint(eRender, eConsole)
             .map_err(|e| e.to_string())?;
-        
+
         let endpoint: IAudioEndpointVolume = device
             .Activate(CLSCTX_ALL, None)
             .map_err(|e| e.to_string())?;
-        
-        let current_mute = endpoint.GetMute()
-            .map_err(|e| e.to_string())?
-            .as_bool();
-        
+
+        let current_mute = endpoint.GetMute().map_err(|e| e.to_string())?.as_bool();
+
         let new_mute = !current_mute;
-        endpoint.SetMute(new_mute, std::ptr::null())
+        endpoint
+            .SetMute(new_mute, std::ptr::null())
             .map_err(|e| e.to_string())?;
-        
+
         Ok(new_mute)
     }
 }
@@ -324,28 +326,26 @@ pub fn toggle_mute() -> Result<bool, String> {
 pub fn set_device_volume(device_id: &str, volume: u32) -> Result<(), String> {
     unsafe {
         let _ = CoInitializeEx(None, COINIT_MULTITHREADED);
-        
-        let enumerator: IMMDeviceEnumerator = CoCreateInstance(
-            &MMDeviceEnumerator,
-            None,
-            CLSCTX_ALL,
-        ).map_err(|e| e.to_string())?;
-        
+
+        let enumerator: IMMDeviceEnumerator =
+            CoCreateInstance(&MMDeviceEnumerator, None, CLSCTX_ALL).map_err(|e| e.to_string())?;
+
         // Convert device_id to wide string
         let wide_id: Vec<u16> = device_id.encode_utf16().chain(std::iter::once(0)).collect();
-        
+
         let device = enumerator
             .GetDevice(PCWSTR::from_raw(wide_id.as_ptr()))
             .map_err(|e| e.to_string())?;
-        
+
         let endpoint: IAudioEndpointVolume = device
             .Activate(CLSCTX_ALL, None)
             .map_err(|e| e.to_string())?;
-        
+
         let level = (volume.min(100) as f32) / 100.0;
-        endpoint.SetMasterVolumeLevelScalar(level, std::ptr::null())
+        endpoint
+            .SetMasterVolumeLevelScalar(level, std::ptr::null())
             .map_err(|e| e.to_string())?;
-        
+
         Ok(())
     }
 }
@@ -363,15 +363,27 @@ pub fn set_default_device(device_id: &str) -> Result<(), String> {
             .map_err(|e| e.to_string())?;
 
         // Apply for all roles.
-        (policy.vtable().SetDefaultEndpoint)(policy.as_raw() as *mut _, device_pwstr, ERole::eConsole)
-            .ok()
-            .map_err(|e| e.to_string())?;
-        (policy.vtable().SetDefaultEndpoint)(policy.as_raw() as *mut _, device_pwstr, ERole::eMultimedia)
-            .ok()
-            .map_err(|e| e.to_string())?;
-        (policy.vtable().SetDefaultEndpoint)(policy.as_raw() as *mut _, device_pwstr, ERole::eCommunications)
-            .ok()
-            .map_err(|e| e.to_string())?;
+        (policy.vtable().SetDefaultEndpoint)(
+            policy.as_raw() as *mut _,
+            device_pwstr,
+            ERole::eConsole,
+        )
+        .ok()
+        .map_err(|e| e.to_string())?;
+        (policy.vtable().SetDefaultEndpoint)(
+            policy.as_raw() as *mut _,
+            device_pwstr,
+            ERole::eMultimedia,
+        )
+        .ok()
+        .map_err(|e| e.to_string())?;
+        (policy.vtable().SetDefaultEndpoint)(
+            policy.as_raw() as *mut _,
+            device_pwstr,
+            ERole::eCommunications,
+        )
+        .ok()
+        .map_err(|e| e.to_string())?;
 
         Ok(())
     }

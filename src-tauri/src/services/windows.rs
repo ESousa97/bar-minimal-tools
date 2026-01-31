@@ -93,8 +93,15 @@ fn get_process_path(pid: u32) -> Option<PathBuf> {
         let handle = OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid).ok()?;
         let mut buffer: Vec<u16> = vec![0; MAX_PATH as usize];
         let mut size = buffer.len() as u32;
-        
-        if QueryFullProcessImageNameW(handle, PROCESS_NAME_WIN32, windows::core::PWSTR(buffer.as_mut_ptr()), &mut size).is_ok() {
+
+        if QueryFullProcessImageNameW(
+            handle,
+            PROCESS_NAME_WIN32,
+            windows::core::PWSTR(buffer.as_mut_ptr()),
+            &mut size,
+        )
+        .is_ok()
+        {
             let _ = windows::Win32::Foundation::CloseHandle(handle);
             let path = OsString::from_wide(&buffer[..size as usize]);
             return Some(PathBuf::from(path));
@@ -148,7 +155,7 @@ fn is_alt_tab_window(hwnd: HWND) -> bool {
             "NotifyIconOverflowWindow",
             "TopLevelWindowForOverflowXamlIsland",
         ];
-        
+
         if skip_classes.iter().any(|&c| class_name == c) {
             return false;
         }
@@ -173,14 +180,14 @@ unsafe extern "system" fn enum_windows_callback(hwnd: HWND, lparam: LPARAM) -> B
     }
 
     let windows = &mut *(lparam.0 as *mut Vec<WindowInfo>);
-    
+
     let title = get_window_text(hwnd);
     let is_minimized = IsIconic(hwnd).as_bool();
-    
+
     // Get process ID
     let mut pid: u32 = 0;
     GetWindowThreadProcessId(hwnd, Some(&mut pid));
-    
+
     // Get process path and name
     let (process_path, process_name) = if let Some(path) = get_process_path(pid) {
         let name = path
@@ -231,7 +238,7 @@ pub fn get_window_list() -> WindowList {
 #[cfg(windows)]
 fn fetch_window_list() -> WindowList {
     let mut windows: Vec<WindowInfo> = Vec::new();
-    
+
     unsafe {
         let _ = EnumWindows(
             Some(enum_windows_callback),
@@ -253,12 +260,12 @@ pub fn focus_window(hwnd: isize) -> Result<(), String> {
     {
         unsafe {
             let handle = HWND(hwnd as *mut std::ffi::c_void);
-            
+
             // If minimized, restore it first
             if IsIconic(handle).as_bool() {
                 let _ = ShowWindow(handle, SW_RESTORE);
             }
-            
+
             // Bring to foreground
             if SetForegroundWindow(handle).as_bool() {
                 Ok(())
@@ -280,24 +287,24 @@ pub fn get_foreground_window() -> Option<WindowInfo> {
     #[cfg(windows)]
     {
         use windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow;
-        
+
         unsafe {
             let hwnd = GetForegroundWindow();
             if hwnd.0.is_null() {
                 return None;
             }
-            
+
             // Check if it's an alt-tab worthy window
             if !is_alt_tab_window(hwnd) {
                 return None;
             }
-            
+
             let title = get_window_text(hwnd);
             let is_minimized = IsIconic(hwnd).as_bool();
-            
+
             let mut pid: u32 = 0;
             GetWindowThreadProcessId(hwnd, Some(&mut pid));
-            
+
             let (process_path, process_name) = if let Some(path) = get_process_path(pid) {
                 let name = path
                     .file_name()
@@ -307,7 +314,7 @@ pub fn get_foreground_window() -> Option<WindowInfo> {
             } else {
                 (String::new(), String::new())
             };
-            
+
             Some(WindowInfo {
                 hwnd: hwnd.0 as isize,
                 title,
@@ -317,7 +324,7 @@ pub fn get_foreground_window() -> Option<WindowInfo> {
             })
         }
     }
-    
+
     #[cfg(not(windows))]
     {
         None
@@ -328,11 +335,11 @@ pub fn get_foreground_window() -> Option<WindowInfo> {
 pub fn get_process_icon(process_path: &str) -> Option<String> {
     #[cfg(windows)]
     {
-        use windows::Win32::UI::Shell::ExtractIconExW;
         use windows::Win32::Graphics::Gdi::{
-            CreateCompatibleDC, DeleteDC, DeleteObject, GetDIBits, SelectObject,
-            BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS,
+            CreateCompatibleDC, DeleteDC, DeleteObject, GetDIBits, SelectObject, BITMAPINFO,
+            BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS,
         };
+        use windows::Win32::UI::Shell::ExtractIconExW;
         use windows::Win32::UI::WindowsAndMessaging::{DestroyIcon, GetIconInfo, ICONINFO};
 
         if process_path.is_empty() {
@@ -341,9 +348,12 @@ pub fn get_process_icon(process_path: &str) -> Option<String> {
 
         unsafe {
             // Extract icon from exe
-            let wide_path: Vec<u16> = process_path.encode_utf16().chain(std::iter::once(0)).collect();
+            let wide_path: Vec<u16> = process_path
+                .encode_utf16()
+                .chain(std::iter::once(0))
+                .collect();
             let mut large_icon = windows::Win32::UI::WindowsAndMessaging::HICON::default();
-            
+
             let count = ExtractIconExW(
                 windows::core::PCWSTR(wide_path.as_ptr()),
                 0,
@@ -397,7 +407,7 @@ pub fn get_process_icon(process_path: &str) -> Option<String> {
             };
 
             let mut pixels: Vec<u8> = vec![0; 32 * 32 * 4];
-            
+
             let result = GetDIBits(
                 hdc,
                 icon_info.hbmColor,
@@ -433,7 +443,7 @@ pub fn get_process_icon(process_path: &str) -> Option<String> {
                 let mut encoder = png::Encoder::new(&mut png_data, 32, 32);
                 encoder.set_color(png::ColorType::Rgba);
                 encoder.set_depth(png::BitDepth::Eight);
-                
+
                 if let Ok(mut writer) = encoder.write_header() {
                     if writer.write_image_data(&pixels).is_err() {
                         return None;
@@ -442,7 +452,7 @@ pub fn get_process_icon(process_path: &str) -> Option<String> {
                     return None;
                 }
             }
-            
+
             use base64::Engine;
             let base64_str = base64::engine::general_purpose::STANDARD.encode(&png_data);
             return Some(format!("data:image/png;base64,{}", base64_str));

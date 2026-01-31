@@ -1,22 +1,13 @@
 # Clippy configuration for Bar Minimal Tools
+# https://doc.rust-lang.org/clippy/configuration.html
 
-# Deny warnings in CI
-# Use: cargo clippy -- -D warnings
+# MSRV (Minimum Supported Rust Version)
+msrv = "1.77.0"
 
-# Allow certain lints that may be too strict
-#
-# cognitive_complexity - we have some complex Windows API interactions
-# too_many_arguments - Windows APIs often require many parameters
-# large_enum_variant - some Windows types have large variants
+# Thresholds
+cognitive-complexity-threshold = 30
+too-many-arguments-threshold = 10
+too-many-lines-threshold = 200
 
-[lints.clippy]
-# Pedantic but helpful
-pedantic = "warn"
-# Specific denies
-unwrap_used = "warn"
-expect_used = "warn"
-panic = "warn"
-# Specific allows
-cognitive_complexity = "allow"
-too_many_arguments = "allow"
-large_enum_variant = "allow"
+# Disable some pedantic checks that are too strict for Windows APIs
+avoid-breaking-exported-api = false

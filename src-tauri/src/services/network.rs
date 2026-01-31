@@ -1,7 +1,7 @@
 //! Network monitoring service
 
-use serde::Serialize;
 use crate::services::wmi_service::CachedNetworkData;
+use serde::Serialize;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct NetworkData {

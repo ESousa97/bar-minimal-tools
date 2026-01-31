@@ -1,11 +1,11 @@
 //! Headset service for Corsair iCUE SDK integration
 //! Provides battery level, mic, equalizer, surround sound, and sidetone control for Corsair headsets
 
-use serde::{Serialize, Deserialize};
-use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
-use std::sync::OnceLock;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, AtomicI32, Ordering};
 use std::sync::Mutex;
+use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 #[cfg(windows)]
@@ -127,25 +127,25 @@ impl Default for HeadsetData {
 mod cue_sdk {
     pub const CORSAIR_STRING_SIZE_M: usize = 128;
     pub const CORSAIR_DEVICE_COUNT_MAX: usize = 64;
-    
+
     // Device types (bitmask)
     pub const CDT_HEADSET: i32 = 0x0008;
     pub const CDT_HEADSET_STAND: i32 = 0x0010;
-    
+
     // Error codes
     pub const CE_SUCCESS: i32 = 0;
-    
+
     // Property IDs
     pub const CDPI_MIC_ENABLED: i32 = 2;
     pub const CDPI_SURROUND_SOUND_ENABLED: i32 = 3;
     pub const CDPI_SIDETONE_ENABLED: i32 = 4;
     pub const CDPI_EQUALIZER_PRESET: i32 = 5;
     pub const CDPI_BATTERY_LEVEL: i32 = 9;
-    
+
     // Data types
     pub const CT_BOOLEAN: i32 = 0;
     pub const CT_INT32: i32 = 1;
-    
+
     // Property flags
     pub const CPF_CAN_READ: u32 = 0x01;
 }
@@ -271,30 +271,40 @@ unsafe extern "C" fn on_session_state_changed(
 #[cfg(windows)]
 fn get_sdk_dll_path() -> Option<std::path::PathBuf> {
     use std::path::PathBuf;
-    
+
     // Get the executable directory
     let exe_dir = std::env::current_exe()
         .ok()
         .and_then(|p| p.parent().map(|p| p.to_path_buf()));
-    
+
     // Possible paths to search
     let mut paths = vec![
         // Same folder as exe
         exe_dir.clone().map(|p| p.join("iCUESDK.x64_2019.dll")),
         // Project libs folder (relative to exe in debug)
-        exe_dir.clone().map(|p| p.join("..\\..\\..\\libs\\iCUESDK\\iCUESDK.x64_2019.dll")),
+        exe_dir
+            .clone()
+            .map(|p| p.join("..\\..\\..\\libs\\iCUESDK\\iCUESDK.x64_2019.dll")),
         // Src-tauri libs (when running from project root)
-        Some(PathBuf::from(r".\src-tauri\libs\iCUESDK\iCUESDK.x64_2019.dll")),
-        Some(PathBuf::from(r"src-tauri\libs\iCUESDK\iCUESDK.x64_2019.dll")),
+        Some(PathBuf::from(
+            r".\src-tauri\libs\iCUESDK\iCUESDK.x64_2019.dll",
+        )),
+        Some(PathBuf::from(
+            r"src-tauri\libs\iCUESDK\iCUESDK.x64_2019.dll",
+        )),
         Some(PathBuf::from(r"libs\iCUESDK\iCUESDK.x64_2019.dll")),
     ];
-    
+
     // Also add iCUE installation paths as fallback
     paths.extend(vec![
-        Some(PathBuf::from(r"C:\Program Files\Corsair\CORSAIR iCUE 5 Software\iCUESDK.x64_2019.dll")),
-        Some(PathBuf::from(r"C:\Program Files\Corsair\CORSAIR iCUE 4 Software\iCUESDK.x64_2019.dll")),
+        Some(PathBuf::from(
+            r"C:\Program Files\Corsair\CORSAIR iCUE 5 Software\iCUESDK.x64_2019.dll",
+        )),
+        Some(PathBuf::from(
+            r"C:\Program Files\Corsair\CORSAIR iCUE 4 Software\iCUESDK.x64_2019.dll",
+        )),
     ]);
-    
+
     for path_opt in paths {
         if let Some(path) = path_opt {
             // Normalize the path
@@ -325,7 +335,7 @@ fn initialize_sdk() -> bool {
     if SDK_LIBRARY.get().is_some() {
         return SDK_AVAILABLE.load(Ordering::SeqCst);
     }
-    
+
     let dll_path = match get_sdk_dll_path() {
         Some(p) => p,
         None => {
@@ -335,27 +345,28 @@ fn initialize_sdk() -> bool {
             return false;
         }
     };
-    
+
     unsafe {
         match Library::new(&dll_path) {
             Ok(lib) => {
                 if verbose_logs_enabled() {
                     eprintln!("iCUE SDK loaded successfully from: {:?}", dll_path);
                 }
-                
+
                 // Get CorsairConnect function
-                let connect: Result<libloading::Symbol<CorsairConnectFn>, _> = lib.get(b"CorsairConnect");
-                
+                let connect: Result<libloading::Symbol<CorsairConnectFn>, _> =
+                    lib.get(b"CorsairConnect");
+
                 if let Ok(connect_fn) = connect {
                     let result = connect_fn(Some(on_session_state_changed), std::ptr::null_mut());
-                    
+
                     if result == cue_sdk::CE_SUCCESS {
                         if verbose_logs_enabled() {
                             eprintln!("CorsairConnect succeeded");
                         }
                         let _ = SDK_LIBRARY.set(lib);
                         SDK_AVAILABLE.store(true, Ordering::SeqCst);
-                        
+
                         // Wait a bit for connection to establish
                         std::thread::sleep(std::time::Duration::from_millis(500));
                         return true;
@@ -371,7 +382,7 @@ fn initialize_sdk() -> bool {
             }
         }
     }
-    
+
     false
 }
 
@@ -385,7 +396,7 @@ unsafe fn read_bool_property(
 ) -> Option<bool> {
     let mut property: CorsairProperty = std::mem::zeroed();
     let result = read_property(device_id, property_id, 0, &mut property);
-    
+
     if result == cue_sdk::CE_SUCCESS {
         let value = property.value.boolean;
         free_property(&mut property as *mut _);
@@ -405,7 +416,7 @@ unsafe fn read_int32_property(
 ) -> Option<i32> {
     let mut property: CorsairProperty = std::mem::zeroed();
     let result = read_property(device_id, property_id, 0, &mut property);
-    
+
     if result == cue_sdk::CE_SUCCESS {
         let value = property.value.int32;
         free_property(&mut property as *mut _);
@@ -468,9 +479,9 @@ unsafe fn get_property_info(
 ) -> (bool, bool) {
     let mut data_type: i32 = 0;
     let mut flags: u32 = 0;
-    
+
     let result = get_property_info_fn(device_id, property_id, 0, &mut data_type, &mut flags);
-    
+
     if result == cue_sdk::CE_SUCCESS {
         let can_read = (flags & cue_sdk::CPF_CAN_READ) != 0;
         (can_read, false) // We no longer support write operations
@@ -486,50 +497,69 @@ pub fn get_headset_data() -> HeadsetData {
     if !initialize_sdk() {
         return HeadsetData::default();
     }
-    
+
     unsafe {
         let lib = match SDK_LIBRARY.get() {
             Some(l) => l,
             None => return HeadsetData::default(),
         };
-        
+
         // Get function pointers
-        let get_devices: libloading::Symbol<CorsairGetDevicesFn> = match lib.get(b"CorsairGetDevices") {
-            Ok(f) => f,
-            Err(_) => return HeadsetData { sdk_available: true, ..Default::default() },
-        };
-        
-        let read_property: libloading::Symbol<CorsairReadDevicePropertyFn> = match lib.get(b"CorsairReadDeviceProperty") {
-            Ok(f) => f,
-            Err(_) => return HeadsetData { sdk_available: true, ..Default::default() },
-        };
-        
-        let free_property: libloading::Symbol<CorsairFreePropertyFn> = match lib.get(b"CorsairFreeProperty") {
-            Ok(f) => f,
-            Err(_) => return HeadsetData { sdk_available: true, ..Default::default() },
-        };
-        
-        let get_property_info_fn: libloading::Symbol<CorsairGetDevicePropertyInfoFn> = match lib.get(b"CorsairGetDevicePropertyInfo") {
-            Ok(f) => f,
-            Err(_) => return HeadsetData { sdk_available: true, ..Default::default() },
-        };
-        
+        let get_devices: libloading::Symbol<CorsairGetDevicesFn> =
+            match lib.get(b"CorsairGetDevices") {
+                Ok(f) => f,
+                Err(_) => {
+                    return HeadsetData {
+                        sdk_available: true,
+                        ..Default::default()
+                    }
+                }
+            };
+
+        let read_property: libloading::Symbol<CorsairReadDevicePropertyFn> =
+            match lib.get(b"CorsairReadDeviceProperty") {
+                Ok(f) => f,
+                Err(_) => {
+                    return HeadsetData {
+                        sdk_available: true,
+                        ..Default::default()
+                    }
+                }
+            };
+
+        let free_property: libloading::Symbol<CorsairFreePropertyFn> =
+            match lib.get(b"CorsairFreeProperty") {
+                Ok(f) => f,
+                Err(_) => {
+                    return HeadsetData {
+                        sdk_available: true,
+                        ..Default::default()
+                    }
+                }
+            };
+
+        let get_property_info_fn: libloading::Symbol<CorsairGetDevicePropertyInfoFn> =
+            match lib.get(b"CorsairGetDevicePropertyInfo") {
+                Ok(f) => f,
+                Err(_) => {
+                    return HeadsetData {
+                        sdk_available: true,
+                        ..Default::default()
+                    }
+                }
+            };
+
         // Create filter for headsets
         let filter = CorsairDeviceFilter {
             device_type_mask: cue_sdk::CDT_HEADSET | cue_sdk::CDT_HEADSET_STAND,
         };
-        
+
         // Get devices
         let mut devices: [CorsairDeviceInfo; 64] = std::mem::zeroed();
         let mut device_count: i32 = 0;
-        
-        let result = get_devices(
-            &filter,
-            64,
-            devices.as_mut_ptr(),
-            &mut device_count,
-        );
-        
+
+        let result = get_devices(&filter, 64, devices.as_mut_ptr(), &mut device_count);
+
         if result != cue_sdk::CE_SUCCESS {
             eprintln!("CorsairGetDevices failed with error: {}", result);
             return HeadsetData {
@@ -538,7 +568,7 @@ pub fn get_headset_data() -> HeadsetData {
                 ..Default::default()
             };
         }
-        
+
         if device_count == 0 {
             return HeadsetData {
                 sdk_available: true,
@@ -546,26 +576,34 @@ pub fn get_headset_data() -> HeadsetData {
                 ..Default::default()
             };
         }
-        
+
         // Process first headset found
         let device = &devices[0];
         let device_id_ptr = device.id.as_ptr();
         let led_count = device.led_count;
-        
+
         // Get device name
         let name = std::ffi::CStr::from_ptr(device.model.as_ptr() as *const i8)
             .to_string_lossy()
             .to_string();
-        
+
         // Get device ID string for later use
         let device_id = std::ffi::CStr::from_ptr(device.id.as_ptr() as *const i8)
             .to_string_lossy()
             .to_string();
-        
+
         // Check supported features (read-only)
-        let (has_battery, _) = get_property_info(&get_property_info_fn, device_id_ptr, cue_sdk::CDPI_BATTERY_LEVEL);
-        let (has_mic, _) = get_property_info(&get_property_info_fn, device_id_ptr, cue_sdk::CDPI_MIC_ENABLED);
-        
+        let (has_battery, _) = get_property_info(
+            &get_property_info_fn,
+            device_id_ptr,
+            cue_sdk::CDPI_BATTERY_LEVEL,
+        );
+        let (has_mic, _) = get_property_info(
+            &get_property_info_fn,
+            device_id_ptr,
+            cue_sdk::CDPI_MIC_ENABLED,
+        );
+
         let supported_features = HeadsetFeatures {
             has_battery,
             has_mic_toggle: has_mic,
@@ -574,15 +612,25 @@ pub fn get_headset_data() -> HeadsetData {
             has_equalizer: false,
             has_lighting: led_count > 0,
         };
-        
+
         // Read battery level
-        let battery_level = read_int32_property(&read_property, &free_property, device_id_ptr, cue_sdk::CDPI_BATTERY_LEVEL)
-            .map(|v| v.clamp(0, 100) as u8)
-            .unwrap_or(0);
-        
+        let battery_level = read_int32_property(
+            &read_property,
+            &free_property,
+            device_id_ptr,
+            cue_sdk::CDPI_BATTERY_LEVEL,
+        )
+        .map(|v| v.clamp(0, 100) as u8)
+        .unwrap_or(0);
+
         // Read mic status
-        let mic_enabled = read_bool_property(&read_property, &free_property, device_id_ptr, cue_sdk::CDPI_MIC_ENABLED)
-            .unwrap_or(false);
+        let mic_enabled = read_bool_property(
+            &read_property,
+            &free_property,
+            device_id_ptr,
+            cue_sdk::CDPI_MIC_ENABLED,
+        )
+        .unwrap_or(false);
 
         // Infer charging based on battery trend (SDK doesn't expose charging directly)
         let is_charging = if has_battery && !device_id.is_empty() {
@@ -590,7 +638,7 @@ pub fn get_headset_data() -> HeadsetData {
         } else {
             false
         };
-        
+
         // Determine status
         let status = if battery_level == 0 {
             HeadsetStatus::Disconnected
@@ -599,9 +647,13 @@ pub fn get_headset_data() -> HeadsetData {
         } else {
             HeadsetStatus::Connected
         };
-        
+
         HeadsetData {
-            name: if name.is_empty() { "Corsair Headset".to_string() } else { name },
+            name: if name.is_empty() {
+                "Corsair Headset".to_string()
+            } else {
+                name
+            },
             device_id,
             battery_percent: battery_level,
             status,

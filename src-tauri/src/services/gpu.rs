@@ -1,7 +1,7 @@
 //! GPU monitoring service with generic (WMI/DXGI) and NVIDIA-specific telemetry
 
-use serde::Serialize;
 use crate::services::wmi_service::CachedSystemData;
+use serde::Serialize;
 
 /// Basic GPU data available for all vendors
 #[derive(Serialize, Clone, Debug)]
@@ -75,13 +75,13 @@ pub fn get_gpu_info_cached(cached: &CachedSystemData) -> GpuData {
     // If NVIDIA GPU is available, return detailed data
     if cached.nvidia_gpu.available {
         let nvidia = &cached.nvidia_gpu;
-        
+
         let vram_usage_percent = if nvidia.memory_total_mb > 0 {
             (nvidia.memory_used_mb as f32 / nvidia.memory_total_mb as f32) * 100.0
         } else {
             0.0
         };
-        
+
         let basic = GpuBasicData {
             name: nvidia.name.clone(),
             vendor: "NVIDIA".to_string(),
@@ -90,7 +90,7 @@ pub fn get_gpu_info_cached(cached: &CachedSystemData) -> GpuData {
             vram_total_mb: nvidia.memory_total_mb,
             vram_usage_percent,
         };
-        
+
         let detailed = GpuDetailedData {
             basic,
             temperature_c: Some(nvidia.temperature_c as f32),
@@ -105,19 +105,19 @@ pub fn get_gpu_info_cached(cached: &CachedSystemData) -> GpuData {
             pcie_lanes: None,
             perf_state: None,
         };
-        
+
         return GpuData::Detailed(detailed);
     }
-    
+
     // Fallback to WMI data
     let mut basic = GpuBasicData::default();
-    
+
     if !cached.gpu_name.is_empty() {
         basic.name = cached.gpu_name.clone();
     } else {
         basic.name = "Loading...".to_string();
     }
-    
+
     basic.vendor = cached.gpu_vendor.clone();
     basic.usage_percent = cached.gpu_usage_percent;
     basic.vram_total_mb = cached.gpu_vram_mb;
@@ -126,7 +126,7 @@ pub fn get_gpu_info_cached(cached: &CachedSystemData) -> GpuData {
     if basic.vram_total_mb > 0 {
         basic.vram_usage_percent = (basic.vram_used_mb as f32 / basic.vram_total_mb as f32) * 100.0;
     }
-    
+
     GpuData::Basic(basic)
 }
 

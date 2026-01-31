@@ -1,7 +1,7 @@
 //! Storage monitoring service for HDD, SSD, and NVMe drives
 
-use serde::Serialize;
 use crate::services::wmi_service::CachedSystemData;
+use serde::Serialize;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct DriveInfo {
@@ -50,7 +50,7 @@ impl Default for StorageData {
 /// Get storage information using cached WMI data
 pub fn get_storage_info_cached(cached: &CachedSystemData) -> StorageData {
     let mut data = StorageData::default();
-    
+
     for drive in &cached.drives {
         let used_bytes = drive.total_bytes.saturating_sub(drive.free_bytes);
         let usage_percent = if drive.total_bytes > 0 {
@@ -58,10 +58,10 @@ pub fn get_storage_info_cached(cached: &CachedSystemData) -> StorageData {
         } else {
             0.0
         };
-        
+
         data.total_bytes += drive.total_bytes;
         data.free_bytes += drive.free_bytes;
-        
+
         data.drives.push(DriveInfo {
             letter: drive.letter.clone(),
             label: drive.label.clone(),
@@ -75,7 +75,7 @@ pub fn get_storage_info_cached(cached: &CachedSystemData) -> StorageData {
             health_status: None,
         });
     }
-    
+
     data
 }
 

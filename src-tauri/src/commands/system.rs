@@ -1,10 +1,10 @@
 //! System data Tauri commands
 
-use crate::services::{cpu, ram, gpu, storage, WmiService};
 use crate::services::network;
+use crate::services::{cpu, gpu, ram, storage, WmiService};
 use serde::Serialize;
-use tauri::State;
 use std::sync::Arc;
+use tauri::State;
 
 #[cfg(windows)]
 use tauri::Manager;
@@ -64,9 +64,12 @@ fn is_windows_11_or_newer() -> bool {
 }
 
 #[cfg(windows)]
-fn send_win_shortcut(vk: windows::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY) -> Result<(), String> {
+fn send_win_shortcut(
+    vk: windows::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY,
+) -> Result<(), String> {
     use windows::Win32::UI::Input::KeyboardAndMouse::{
-        SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VK_LWIN, VIRTUAL_KEY,
+        SendInput, INPUT, INPUT_0, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, VIRTUAL_KEY,
+        VK_LWIN,
     };
 
     let win_vk: VIRTUAL_KEY = VK_LWIN;
@@ -142,10 +145,12 @@ pub struct SystemSnapshot {
 
 /// Get a complete system snapshot with all hardware data (using cached WMI data)
 #[tauri::command]
-pub async fn get_system_snapshot(wmi_service: State<'_, Arc<WmiService>>) -> Result<SystemSnapshot, String> {
+pub async fn get_system_snapshot(
+    wmi_service: State<'_, Arc<WmiService>>,
+) -> Result<SystemSnapshot, String> {
     let timestamp = chrono::Utc::now().timestamp_millis();
     let cached = wmi_service.get_cached_data();
-    
+
     Ok(SystemSnapshot {
         cpu: cpu::get_cpu_info_cached(&cached),
         ram: ram::get_ram_info_cached(&cached),
@@ -178,14 +183,18 @@ pub async fn get_gpu_data(wmi_service: State<'_, Arc<WmiService>>) -> Result<gpu
 
 /// Get storage data only
 #[tauri::command]
-pub async fn get_storage_data(wmi_service: State<'_, Arc<WmiService>>) -> Result<storage::StorageData, String> {
+pub async fn get_storage_data(
+    wmi_service: State<'_, Arc<WmiService>>,
+) -> Result<storage::StorageData, String> {
     let cached = wmi_service.get_cached_data();
     Ok(storage::get_storage_info_cached(&cached))
 }
 
 /// Get network data only
 #[tauri::command]
-pub async fn get_network_data(wmi_service: State<'_, Arc<WmiService>>) -> Result<network::NetworkData, String> {
+pub async fn get_network_data(
+    wmi_service: State<'_, Arc<WmiService>>,
+) -> Result<network::NetworkData, String> {
     let cached = wmi_service.get_cached_data();
     Ok(network::get_network_info_cached(&cached.network))
 }
@@ -201,10 +210,10 @@ pub async fn get_network_data(wmi_service: State<'_, Arc<WmiService>>) -> Result
 pub async fn get_unread_notification_count() -> Result<Option<u32>, String> {
     #[cfg(windows)]
     {
-        use windows::UI::Notifications::{NotificationKinds};
         use windows::UI::Notifications::Management::{
             UserNotificationListener, UserNotificationListenerAccessStatus,
         };
+        use windows::UI::Notifications::NotificationKinds;
 
         let listener = match UserNotificationListener::Current() {
             Ok(l) => l,

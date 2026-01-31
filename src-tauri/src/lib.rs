@@ -1,10 +1,16 @@
 pub mod commands;
 pub mod services;
 
-use commands::{system, config, monitor, popup, audio, headset, media, weather, notes, folders, startup, windows};
+use commands::{
+    audio, config, folders, headset, media, monitor, notes, popup, startup, system, weather,
+    windows,
+};
 use services::WmiService;
 use std::collections::HashSet;
-use std::sync::{Arc, atomic::{AtomicBool, AtomicU64, Ordering}, Mutex};
+use std::sync::{
+    atomic::{AtomicBool, AtomicU64, Ordering},
+    Arc, Mutex,
+};
 use std::time::Duration;
 use tauri::{
     menu::{Menu, MenuItem},
@@ -67,7 +73,6 @@ pub fn run() {
     let taskbar_state = Arc::new(TaskbarState::default());
     let pinned_popups = PinnedPopups::default();
     let folders_popup_cooldown = FoldersPopupCooldown::default();
-
 
     let mut builder = tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
@@ -204,7 +209,7 @@ pub fn run() {
             let show_item = MenuItem::with_id(app, "show", "Mostrar/Ocultar", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Sair", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
-            
+
             let tray = TrayIconBuilder::with_id("main-tray")
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
@@ -268,7 +273,7 @@ pub fn run() {
             {
                 use tauri::PhysicalPosition;
                 use tauri::PhysicalSize;
-                
+
                 let bar_height: i32 = 32; // Fixed height for the bar
                 let (screen_width, _) = services::get_primary_screen_size();
                 let verbose_logs_enabled = std::env::var_os("BAR_VERBOSE_LOGS").is_some();
@@ -295,7 +300,7 @@ pub fn run() {
                     // Set window position and size to full screen width
                     let _ = window.set_position(PhysicalPosition::new(0, 0));
                     let _ = window.set_size(PhysicalSize::new(screen_width as u32, bar_height as u32));
-                    
+
                     // Log actual window size after setting
                     if let Ok(size) = window.outer_size() {
                         if verbose_logs_enabled {
@@ -307,14 +312,14 @@ pub fn run() {
                             eprintln!("Window actual position: ({}, {})", pos.x, pos.y);
                         }
                     }
-                    
+
                     let state_for_register = taskbar_state.clone();
                     let win = window.clone();
-                    
+
                     // Spawn a task with a small delay to ensure window is fully created
                     std::thread::spawn(move || {
                         std::thread::sleep(Duration::from_millis(500));
-                        
+
                         if let Ok(hwnd) = win.hwnd() {
                             let _ = services::register_appbar(
                                 hwnd.0 as isize,

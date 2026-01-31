@@ -1,7 +1,7 @@
 //! RAM monitoring service using Windows APIs
 
-use serde::Serialize;
 use crate::services::wmi_service::CachedSystemData;
+use serde::Serialize;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct RamData {
@@ -38,14 +38,14 @@ impl Default for RamData {
 /// Get RAM information using cached WMI data + Windows API
 pub fn get_ram_info_cached(cached: &CachedSystemData) -> RamData {
     let mut data = RamData::default();
-    
+
     #[cfg(windows)]
     {
         use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
-        
+
         let mut mem_status = MEMORYSTATUSEX::default();
         mem_status.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
-        
+
         unsafe {
             if GlobalMemoryStatusEx(&mut mem_status).is_ok() {
                 data.total_bytes = mem_status.ullTotalPhys;
@@ -55,12 +55,12 @@ pub fn get_ram_info_cached(cached: &CachedSystemData) -> RamData {
             }
         }
     }
-    
+
     // Use cached RAM speed from WMI
     if cached.ram_speed_mhz > 0 {
         data.speed_mhz = Some(cached.ram_speed_mhz);
     }
-    
+
     data
 }
 
@@ -69,15 +69,14 @@ pub fn get_ram_info() -> Result<RamData, String> {
     #[cfg(windows)]
     {
         use windows::Win32::System::SystemInformation::{GlobalMemoryStatusEx, MEMORYSTATUSEX};
-        
+
         let mut mem_status = MEMORYSTATUSEX::default();
         mem_status.dwLength = std::mem::size_of::<MEMORYSTATUSEX>() as u32;
-        
+
         unsafe {
-            GlobalMemoryStatusEx(&mut mem_status)
-                .map_err(|e| e.to_string())?;
+            GlobalMemoryStatusEx(&mut mem_status).map_err(|e| e.to_string())?;
         }
-        
+
         let data = RamData {
             total_bytes: mem_status.ullTotalPhys,
             available_bytes: mem_status.ullAvailPhys,
@@ -87,13 +86,12 @@ pub fn get_ram_info() -> Result<RamData, String> {
             temperature_c: None,
             speed_mhz: None, // Skip WMI query for sync version
         };
-        
+
         Ok(data)
     }
-    
+
     #[cfg(not(windows))]
     {
         Err("RAM monitoring only supported on Windows".to_string())
     }
 }
-

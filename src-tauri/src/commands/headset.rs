@@ -46,21 +46,21 @@ pub fn check_icue_sdk() -> IcueSdkStatus {
 #[cfg(windows)]
 fn check_icue_sdk_windows() -> IcueSdkStatus {
     use std::process::Command;
-    
+
     // Check if iCUE is running
     let icue_running = Command::new("tasklist")
         .args(["/FI", "IMAGENAME eq iCUE.exe"])
         .output()
         .map(|o| String::from_utf8_lossy(&o.stdout).contains("iCUE.exe"))
         .unwrap_or(false);
-    
+
     // First check project libs folder
     let project_paths = vec![
         PathBuf::from(r".\src-tauri\libs\iCUESDK\iCUESDK.x64_2019.dll"),
         PathBuf::from(r"src-tauri\libs\iCUESDK\iCUESDK.x64_2019.dll"),
         PathBuf::from(r"libs\iCUESDK\iCUESDK.x64_2019.dll"),
     ];
-    
+
     for path in &project_paths {
         if path.exists() {
             return IcueSdkStatus {
@@ -72,7 +72,7 @@ fn check_icue_sdk_windows() -> IcueSdkStatus {
             };
         }
     }
-    
+
     // Also check via the service module
     if let Some(sdk_path) = headset::get_sdk_path() {
         return IcueSdkStatus {
@@ -83,9 +83,9 @@ fn check_icue_sdk_windows() -> IcueSdkStatus {
             version: Some("4.x".to_string()),
         };
     }
-    
+
     let sdk_dll_names = ["iCUESDK.x64_2019.dll", "CUESDK.x64_2019.dll"];
-    
+
     // Common iCUE installation paths
     let possible_paths = vec![
         PathBuf::from(r"C:\Program Files\Corsair\CORSAIR iCUE 5 Software"),
@@ -94,7 +94,7 @@ fn check_icue_sdk_windows() -> IcueSdkStatus {
         PathBuf::from(r"C:\Program Files (x86)\Corsair\CORSAIR iCUE 5 Software"),
         PathBuf::from(r"C:\Program Files (x86)\Corsair\CORSAIR iCUE 4 Software"),
     ];
-    
+
     // Search for SDK DLL
     for base_path in &possible_paths {
         for dll_name in &sdk_dll_names {
@@ -108,7 +108,7 @@ fn check_icue_sdk_windows() -> IcueSdkStatus {
                 } else {
                     None
                 };
-                
+
                 return IcueSdkStatus {
                     installed: true,
                     sdk_path: Some(full_path.to_string_lossy().to_string()),
@@ -119,7 +119,7 @@ fn check_icue_sdk_windows() -> IcueSdkStatus {
             }
         }
     }
-    
+
     // SDK not found
     IcueSdkStatus {
         installed: false,
@@ -147,36 +147,35 @@ pub async fn install_icue_sdk() -> Result<String, String> {
 #[cfg(windows)]
 async fn install_icue_sdk_windows() -> Result<String, String> {
     use std::process::Command;
-    
+
     // First check if iCUE is already installed
     let status = check_icue_sdk_windows();
-    
+
     if status.installed {
         return Ok(format!(
             "iCUE SDK already installed at: {}",
             status.sdk_path.unwrap_or_default()
         ));
     }
-    
+
     // iCUE needs to be installed - open the download page
     // The SDK is bundled with iCUE, so we need to install the full application
     let download_url = "https://www.corsair.com/us/en/s/downloads";
-    
+
     // Try to open the download page in default browser
     let result = Command::new("cmd")
         .args(["/C", "start", download_url])
         .spawn();
-    
+
     match result {
-        Ok(_) => Ok(
-            "Opening Corsair download page...\n\n\
+        Ok(_) => Ok("Opening Corsair download page...\n\n\
             Please download and install 'iCUE' from the page.\n\
             The SDK is included with iCUE installation.\n\n\
             After installing iCUE:\n\
             1. Make sure iCUE is running\n\
             2. Restart this application\n\
-            3. Your Corsair headset should be detected automatically".to_string()
-        ),
+            3. Your Corsair headset should be detected automatically"
+            .to_string()),
         Err(e) => Err(format!(
             "Failed to open browser: {}\n\n\
             Please manually visit: {}\n\
@@ -231,7 +230,6 @@ pub fn get_icue_setup_instructions() -> String {
 - Virtuoso RGB Wireless (SE/XT)
 - HS70 / HS70 Pro Wireless
 - HS80 RGB Wireless
-"#.to_string()
+"#
+    .to_string()
 }
-
-

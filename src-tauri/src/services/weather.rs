@@ -122,8 +122,10 @@ pub fn get_weather(lat: f64, lon: f64) -> WeatherData {
     // Check cache
     {
         if let Ok(guard) = get_cache().lock() {
-            let same_location = (guard.last_lat - lat).abs() < 0.01 && (guard.last_lon - lon).abs() < 0.01;
-            let cache_valid = guard.last_update
+            let same_location =
+                (guard.last_lat - lat).abs() < 0.01 && (guard.last_lon - lon).abs() < 0.01;
+            let cache_valid = guard
+                .last_update
                 .map(|t| t.elapsed() < Duration::from_secs(CACHE_DURATION_SECS))
                 .unwrap_or(false);
             if guard.data.loaded && same_location && cache_valid {
@@ -154,36 +156,36 @@ fn fetch_weather_blocking(lat: f64, lon: f64) -> WeatherData {
 
     // Use blocking HTTP request
     match ureq::get(&url).call() {
-        Ok(response) => {
-            match response.into_json::<OpenWeatherResponse>() {
-                Ok(data) => {
-                    let weather_info = data.weather.first();
-                    WeatherData {
-                        loaded: true,
-                        city: data.name,
-                        country: data.sys.country.unwrap_or_default(),
-                        temperature: data.main.temp,
-                        feels_like: data.main.feels_like,
-                        temp_min: data.main.temp_min,
-                        temp_max: data.main.temp_max,
-                        humidity: data.main.humidity,
-                        pressure: data.main.pressure,
-                        description: weather_info.map(|w| w.description.clone()).unwrap_or_default(),
-                        icon: weather_info.map(|w| w.icon.clone()).unwrap_or_default(),
-                        wind_speed: data.wind.speed,
-                        wind_deg: data.wind.deg.unwrap_or(0),
-                        clouds: data.clouds.all,
-                        visibility: data.visibility.unwrap_or(10000),
-                        sunrise: data.sys.sunrise.unwrap_or(0),
-                        sunset: data.sys.sunset.unwrap_or(0),
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Failed to parse weather data: {}", e);
-                    WeatherData::default()
+        Ok(response) => match response.into_json::<OpenWeatherResponse>() {
+            Ok(data) => {
+                let weather_info = data.weather.first();
+                WeatherData {
+                    loaded: true,
+                    city: data.name,
+                    country: data.sys.country.unwrap_or_default(),
+                    temperature: data.main.temp,
+                    feels_like: data.main.feels_like,
+                    temp_min: data.main.temp_min,
+                    temp_max: data.main.temp_max,
+                    humidity: data.main.humidity,
+                    pressure: data.main.pressure,
+                    description: weather_info
+                        .map(|w| w.description.clone())
+                        .unwrap_or_default(),
+                    icon: weather_info.map(|w| w.icon.clone()).unwrap_or_default(),
+                    wind_speed: data.wind.speed,
+                    wind_deg: data.wind.deg.unwrap_or(0),
+                    clouds: data.clouds.all,
+                    visibility: data.visibility.unwrap_or(10000),
+                    sunrise: data.sys.sunrise.unwrap_or(0),
+                    sunset: data.sys.sunset.unwrap_or(0),
                 }
             }
-        }
+            Err(e) => {
+                eprintln!("Failed to parse weather data: {}", e);
+                WeatherData::default()
+            }
+        },
         Err(e) => {
             eprintln!("Failed to fetch weather: {}", e);
             WeatherData::default()
@@ -200,26 +202,22 @@ pub fn get_weather_icon_url(icon: &str) -> String {
 pub fn get_current_location() -> LocationData {
     // Use ipapi.co free API for IP geolocation
     let url = "https://ipapi.co/json/";
-    
+
     match ureq::get(url).call() {
-        Ok(response) => {
-            match response.into_json::<IpApiResponse>() {
-                Ok(data) => {
-                    LocationData {
-                        latitude: data.latitude.unwrap_or(0.0),
-                        longitude: data.longitude.unwrap_or(0.0),
-                        city: data.city.unwrap_or_default(),
-                        region: data.region.unwrap_or_default(),
-                        country: data.country_name.unwrap_or_default(),
-                        success: data.latitude.is_some() && data.longitude.is_some(),
-                    }
-                }
-                Err(e) => {
-                    eprintln!("Failed to parse location data: {}", e);
-                    LocationData::default()
-                }
+        Ok(response) => match response.into_json::<IpApiResponse>() {
+            Ok(data) => LocationData {
+                latitude: data.latitude.unwrap_or(0.0),
+                longitude: data.longitude.unwrap_or(0.0),
+                city: data.city.unwrap_or_default(),
+                region: data.region.unwrap_or_default(),
+                country: data.country_name.unwrap_or_default(),
+                success: data.latitude.is_some() && data.longitude.is_some(),
+            },
+            Err(e) => {
+                eprintln!("Failed to parse location data: {}", e);
+                LocationData::default()
             }
-        }
+        },
         Err(e) => {
             eprintln!("Failed to fetch location: {}", e);
             LocationData::default()

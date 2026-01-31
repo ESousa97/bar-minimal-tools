@@ -1,16 +1,22 @@
 //! Popup window commands for dropdowns
 
-use std::sync::Arc;
 use std::sync::atomic::Ordering;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::sync::Arc;
 use std::time::Duration;
-use tauri::{AppHandle, Manager, WebviewWindowBuilder, WebviewUrl, State};
+use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::{AppHandle, Manager, State, WebviewUrl, WebviewWindowBuilder};
 
-use crate::TaskbarState;
-use crate::PinnedPopups;
 use crate::FoldersPopupCooldown;
+use crate::PinnedPopups;
+use crate::TaskbarState;
 
-fn clamp_to_monitor(x: f64, y: f64, width: f64, height: f64, monitor: &tauri::Monitor) -> (f64, f64) {
+fn clamp_to_monitor(
+    x: f64,
+    y: f64,
+    width: f64,
+    height: f64,
+    monitor: &tauri::Monitor,
+) -> (f64, f64) {
     let mx = monitor.position().x as f64;
     let my = monitor.position().y as f64;
     let mw = monitor.size().width as f64;
@@ -110,7 +116,12 @@ async fn open_popup(
     let label = popup_name.to_string();
     popup.on_window_event(move |event| {
         if let tauri::WindowEvent::Focused(false) = event {
-            if pinned_set.lock().ok().map(|s| s.contains(&label)).unwrap_or(false) {
+            if pinned_set
+                .lock()
+                .ok()
+                .map(|s| s.contains(&label))
+                .unwrap_or(false)
+            {
                 return;
             }
             let _ = popup_clone.hide();
@@ -129,7 +140,18 @@ pub async fn open_storage_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "storage-popup", "storage", x, y, 300.0, 350.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "storage-popup",
+        "storage",
+        x,
+        y,
+        300.0,
+        350.0,
+    )
+    .await
 }
 
 /// Open the CPU popup window
@@ -141,7 +163,18 @@ pub async fn open_cpu_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "cpu-popup", "cpu", x, y, 280.0, 320.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "cpu-popup",
+        "cpu",
+        x,
+        y,
+        280.0,
+        320.0,
+    )
+    .await
 }
 
 /// Open the RAM popup window
@@ -153,7 +186,18 @@ pub async fn open_ram_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "ram-popup", "ram", x, y, 280.0, 220.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "ram-popup",
+        "ram",
+        x,
+        y,
+        280.0,
+        220.0,
+    )
+    .await
 }
 
 /// Open the GPU popup window
@@ -165,7 +209,18 @@ pub async fn open_gpu_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "gpu-popup", "gpu", x, y, 280.0, 388.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "gpu-popup",
+        "gpu",
+        x,
+        y,
+        280.0,
+        388.0,
+    )
+    .await
 }
 
 /// Open the Network popup window
@@ -177,7 +232,18 @@ pub async fn open_network_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "network-popup", "network", x, y, 280.0, 200.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "network-popup",
+        "network",
+        x,
+        y,
+        280.0,
+        200.0,
+    )
+    .await
 }
 
 /// Open the Audio popup window
@@ -189,7 +255,18 @@ pub async fn open_audio_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "audio-popup", "audio", x, y, 384.0, 400.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "audio-popup",
+        "audio",
+        x,
+        y,
+        384.0,
+        400.0,
+    )
+    .await
 }
 
 /// Open the Headset popup window
@@ -201,7 +278,18 @@ pub async fn open_headset_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "headset-popup", "headset", x, y, 340.0, 520.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "headset-popup",
+        "headset",
+        x,
+        y,
+        340.0,
+        520.0,
+    )
+    .await
 }
 
 /// Open the Calendar popup window
@@ -213,7 +301,18 @@ pub async fn open_calendar_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "calendar-popup", "calendar", x, y, 300.0, 340.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "calendar-popup",
+        "calendar",
+        x,
+        y,
+        300.0,
+        340.0,
+    )
+    .await
 }
 
 /// Open the Media popup window
@@ -225,7 +324,18 @@ pub async fn open_media_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "media-popup", "media", x, y, 450.0, 380.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "media-popup",
+        "media",
+        x,
+        y,
+        450.0,
+        380.0,
+    )
+    .await
 }
 
 /// Open the weather settings popup
@@ -237,7 +347,18 @@ pub async fn open_weather_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "weather-popup", "weather", x, y, 320.0, 400.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "weather-popup",
+        "weather",
+        x,
+        y,
+        320.0,
+        400.0,
+    )
+    .await
 }
 
 /// Open the notes popup window
@@ -249,7 +370,18 @@ pub async fn open_notes_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "notes-popup", "notes", x, y, 520.0, 420.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "notes-popup",
+        "notes",
+        x,
+        y,
+        520.0,
+        420.0,
+    )
+    .await
 }
 
 /// Open the dev color picker popup window
@@ -284,7 +416,18 @@ pub async fn open_taskswitcher_popup(
     x: i32,
     y: i32,
 ) -> Result<(), String> {
-    open_popup(&app, &taskbar_state, &pinned_popups, "taskswitcher-popup", "taskswitcher", x, y, 400.0, 500.0).await
+    open_popup(
+        &app,
+        &taskbar_state,
+        &pinned_popups,
+        "taskswitcher-popup",
+        "taskswitcher",
+        x,
+        y,
+        400.0,
+        500.0,
+    )
+    .await
 }
 
 /// Open the folders (menu-burger) popup window
@@ -436,7 +579,9 @@ pub fn set_folders_popup_cooldown(
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis() as u64;
-    cooldown.ignore_until.store(now + duration_ms, Ordering::SeqCst);
+    cooldown
+        .ignore_until
+        .store(now + duration_ms, Ordering::SeqCst);
     Ok(())
 }
 
@@ -546,7 +691,7 @@ pub async fn open_settings_popup(
         let _ = popup.set_focus();
         return Ok(());
     }
-    
+
     // Create new popup window
     let popup = WebviewWindowBuilder::new(
         &app,
@@ -633,10 +778,7 @@ pub async fn prewarm_popups(app: AppHandle) -> Result<(), String> {
 
         // `visible(false)` exists in Tauri v2; if it ever changes, the build will
         // catch it. Keeping it here avoids any chance of a visible flash.
-        let popup = builder
-            .visible(false)
-            .build()
-            .map_err(|e| e.to_string())?;
+        let popup = builder.visible(false).build().map_err(|e| e.to_string())?;
 
         // Hidden/offscreen popups should never eat clicks.
         let _ = popup.set_ignore_cursor_events(true);
@@ -646,7 +788,12 @@ pub async fn prewarm_popups(app: AppHandle) -> Result<(), String> {
         let label_s = label.to_string();
         popup.on_window_event(move |event| {
             if let tauri::WindowEvent::Focused(false) = event {
-                if pinned_set.lock().ok().map(|s| s.contains(&label_s)).unwrap_or(false) {
+                if pinned_set
+                    .lock()
+                    .ok()
+                    .map(|s| s.contains(&label_s))
+                    .unwrap_or(false)
+                {
                     return;
                 }
                 let _ = popup_clone.set_ignore_cursor_events(true);
@@ -667,7 +814,10 @@ pub async fn set_popup_pinned(
     popup_name: String,
     pinned: bool,
 ) -> Result<(), String> {
-    let mut set = pinned_popups.set.lock().map_err(|_| "Pinned lock poisoned".to_string())?;
+    let mut set = pinned_popups
+        .set
+        .lock()
+        .map_err(|_| "Pinned lock poisoned".to_string())?;
     if pinned {
         set.insert(popup_name.clone());
     } else {
@@ -688,6 +838,9 @@ pub fn get_popup_pinned(
     pinned_popups: State<'_, PinnedPopups>,
     popup_name: String,
 ) -> Result<bool, String> {
-    let set = pinned_popups.set.lock().map_err(|_| "Pinned lock poisoned".to_string())?;
+    let set = pinned_popups
+        .set
+        .lock()
+        .map_err(|_| "Pinned lock poisoned".to_string())?;
     Ok(set.contains(&popup_name))
 }

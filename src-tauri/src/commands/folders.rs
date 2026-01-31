@@ -26,12 +26,17 @@ pub fn save_folder_shortcuts(shortcuts: FolderShortcutsConfig) -> Result<(), Str
 #[tauri::command]
 pub fn add_folder_shortcut(shortcut: FolderShortcut) -> Result<(), String> {
     let mut config = super::config::get_active_profile()?;
-    
+
     // Check for duplicate ID
-    if config.folder_shortcuts.shortcuts.iter().any(|s| s.id == shortcut.id) {
+    if config
+        .folder_shortcuts
+        .shortcuts
+        .iter()
+        .any(|s| s.id == shortcut.id)
+    {
         return Err("Folder shortcut with this ID already exists".to_string());
     }
-    
+
     config.folder_shortcuts.shortcuts.push(shortcut);
     super::config::save_current_profile(config)
 }
@@ -48,8 +53,13 @@ pub fn remove_folder_shortcut(id: String) -> Result<(), String> {
 #[tauri::command]
 pub fn update_folder_shortcut(shortcut: FolderShortcut) -> Result<(), String> {
     let mut config = super::config::get_active_profile()?;
-    
-    if let Some(existing) = config.folder_shortcuts.shortcuts.iter_mut().find(|s| s.id == shortcut.id) {
+
+    if let Some(existing) = config
+        .folder_shortcuts
+        .shortcuts
+        .iter_mut()
+        .find(|s| s.id == shortcut.id)
+    {
         *existing = shortcut;
         super::config::save_current_profile(config)
     } else {
@@ -72,7 +82,9 @@ pub fn open_folder(
         .duration_since(UNIX_EPOCH)
         .unwrap_or_default()
         .as_millis() as u64;
-    cooldown.ignore_until.store(now + COOLDOWN_MS, Ordering::SeqCst);
+    cooldown
+        .ignore_until
+        .store(now + COOLDOWN_MS, Ordering::SeqCst);
 
     // Hide the folders popup immediately (don't rely on the frontend exit animation).
     if let Some(popup) = app.get_webview_window("folders-popup") {
@@ -99,7 +111,7 @@ pub fn open_folder(
             .spawn()
             .map_err(|e| format!("Failed to open folder: {}", e))?;
     }
-    
+
     #[cfg(not(windows))]
     {
         Command::new("xdg-open")
@@ -107,7 +119,7 @@ pub fn open_folder(
             .spawn()
             .map_err(|e| format!("Failed to open folder: {}", e))?;
     }
-    
+
     Ok(())
 }
 
