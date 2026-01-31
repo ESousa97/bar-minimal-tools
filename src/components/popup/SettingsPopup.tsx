@@ -6,9 +6,10 @@ import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import '../../index.css'
 import { AppConfig, FolderShortcut, FolderShortcutsConfig, MonitorInfo, WidgetConfig } from '../../types'
 import { usePopupExit } from '../../utils/usePopupExit'
-import { getWidgetLabel, normalizeConfig } from '../../utils/widgets'
-import { ChevronDownIcon, ChevronUpIcon, CloseIcon, getFolderIconByName } from '../icons'
+import { normalizeConfig } from '../../utils/widgets'
+import { CloseIcon } from '../icons'
 import { AboutSection, MonitorCard } from '../shared/SettingsShared'
+import { AppearanceTab, ShortcutsTab, SystemTab, WidgetsTab } from './settings'
 
 type TabId = 'appearance' | 'widgets' | 'shortcuts' | 'monitor' | 'system' | 'about'
 
@@ -377,179 +378,25 @@ export function SettingsPopup() {
 
                 <div className="settings-popup__content">
                     {activeTab === 'appearance' && (
-                        <div className="settings-section">
-                            <div className="setting-row">
-                                <label className="setting-label">Tema</label>
-                                <div className="setting-control">
-                                    <button
-                                        className={`theme-btn ${config.display.theme === 'dark' ? 'theme-btn--active' : ''}`}
-                                        onClick={() => updateDisplay('theme', 'dark')}
-                                    >
-                                        Escuro
-                                    </button>
-                                    <button
-                                        className={`theme-btn ${config.display.theme === 'light' ? 'theme-btn--active' : ''}`}
-                                        onClick={() => updateDisplay('theme', 'light')}
-                                    >
-                                        Claro
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div className="setting-row">
-                                <label className="setting-label">Altura da Barra</label>
-                                <div className="setting-control">
-                                    <input
-                                        type="range"
-                                        min="24"
-                                        max="48"
-                                        value={config.display.barHeight}
-                                        onChange={e => updateDisplay('barHeight', parseInt(e.target.value))}
-                                        onPointerUp={() => {
-                                            // On drag end, update the AppBar reserved area once to prevent flicker.
-                                            invoke('preview_taskbar_height', { barHeight: config.display.barHeight, updateAppbar: true }).catch(() => { })
-                                        }}
-                                    />
-                                    <span className="setting-value">{config.display.barHeight}px</span>
-                                </div>
-                            </div>
-
-                            <div className="setting-row">
-                                <label className="setting-label">Opacidade</label>
-                                <div className="setting-control">
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.01"
-                                        value={config.display.opacity}
-                                        onChange={e => updateDisplay('opacity', parseFloat(e.target.value))}
-                                    />
-                                    <span className="setting-value">{Math.round(config.display.opacity * 100)}%</span>
-                                </div>
-                            </div>
-
-                            <div className="setting-row">
-                                <label className="setting-label">Efeito de Blur</label>
-                                <div className="setting-control">
-                                    <label className="toggle">
-                                        <input
-                                            type="checkbox"
-                                            checked={config.display.blur}
-                                            onChange={e => updateDisplay('blur', e.target.checked)}
-                                        />
-                                        <span className="toggle__slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
+                        <AppearanceTab config={config} updateDisplay={updateDisplay} />
                     )}
 
                     {activeTab === 'widgets' && (
-                        <div className="settings-section">
-                            <p className="settings-hint">Arraste para reordenar ou clique no toggle para ativar/desativar.</p>
-                            <div className="widget-list">
-                                {config.widgets
-                                    .slice()
-                                    .sort((a, b) => a.order - b.order)
-                                    .map((widget, idx, arr) => (
-                                        <div key={widget.id} className="widget-item">
-                                            <div className="widget-item__controls">
-                                                <button
-                                                    className="widget-item__move"
-                                                    onClick={() => moveWidget(widget.id, 'up')}
-                                                    disabled={idx === 0}
-                                                >
-                                                    <ChevronUpIcon />
-                                                </button>
-                                                <button
-                                                    className="widget-item__move"
-                                                    onClick={() => moveWidget(widget.id, 'down')}
-                                                    disabled={idx === arr.length - 1}
-                                                >
-                                                    <ChevronDownIcon />
-                                                </button>
-                                            </div>
-                                            <span className="widget-item__name">
-                                                {getWidgetLabel(widget.type)}
-                                            </span>
-                                            <label className="toggle">
-                                                <input
-                                                    type="checkbox"
-                                                    checked={widget.enabled}
-                                                    onChange={e => updateWidget(widget.id, { enabled: e.target.checked })}
-                                                />
-                                                <span className="toggle__slider"></span>
-                                            </label>
-                                        </div>
-                                    ))}
-                            </div>
-                        </div>
+                        <WidgetsTab
+                            widgets={config.widgets}
+                            updateWidget={updateWidget}
+                            moveWidget={moveWidget}
+                        />
                     )}
 
                     {activeTab === 'shortcuts' && (
-                        <div className="settings-section">
-                            <p className="settings-hint">Gerencie os atalhos de pastas do menu hambúrguer.</p>
-                            <div className="widget-list">
-                                {folderShortcuts.map((shortcut, idx, arr) => (
-                                    <div key={shortcut.id} className="widget-item folder-shortcut-item">
-                                        <div className="widget-item__controls">
-                                            <button
-                                                className="widget-item__move"
-                                                onClick={() => moveFolderShortcut(shortcut.id, 'up')}
-                                                disabled={idx === 0}
-                                            >
-                                                <ChevronUpIcon />
-                                            </button>
-                                            <button
-                                                className="widget-item__move"
-                                                onClick={() => moveFolderShortcut(shortcut.id, 'down')}
-                                                disabled={idx === arr.length - 1}
-                                            >
-                                                <ChevronDownIcon />
-                                            </button>
-                                        </div>
-                                        <span className="folder-shortcut-item__icon">
-                                            {getFolderIconByName(shortcut.icon)}
-                                        </span>
-                                        <div className="folder-shortcut-item__fields">
-                                            <input
-                                                type="text"
-                                                className="folder-shortcut-item__name-input"
-                                                value={shortcut.name}
-                                                placeholder="Nome"
-                                                onChange={e => updateFolderShortcut(shortcut.id, { name: e.target.value })}
-                                            />
-                                            <input
-                                                type="text"
-                                                className="folder-shortcut-item__path-input"
-                                                value={shortcut.path}
-                                                placeholder="Caminho da pasta"
-                                                onChange={e => updateFolderShortcut(shortcut.id, { path: e.target.value })}
-                                            />
-                                        </div>
-                                        <label className="toggle">
-                                            <input
-                                                type="checkbox"
-                                                checked={shortcut.enabled}
-                                                onChange={e => updateFolderShortcut(shortcut.id, { enabled: e.target.checked })}
-                                            />
-                                            <span className="toggle__slider"></span>
-                                        </label>
-                                        <button
-                                            className="folder-shortcut-item__remove"
-                                            title="Remover"
-                                            onClick={() => removeFolderShortcut(shortcut.id)}
-                                        >
-                                            <CloseIcon />
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
-                            <button className="btn btn--secondary add-shortcut-btn" onClick={addFolderShortcut}>
-                                + Adicionar Atalho
-                            </button>
-                        </div>
+                        <ShortcutsTab
+                            shortcuts={folderShortcuts}
+                            updateShortcut={updateFolderShortcut}
+                            moveShortcut={moveFolderShortcut}
+                            removeShortcut={removeFolderShortcut}
+                            addShortcut={addFolderShortcut}
+                        />
                     )}
 
                     {activeTab === 'monitor' && (
@@ -571,97 +418,23 @@ export function SettingsPopup() {
                     {activeTab === 'about' && <AboutSection />}
 
                     {activeTab === 'system' && (
-                        <div className="settings-section">
-                            {!isAdmin && (
-                                <div className="setting-row setting-row--warning">
-                                    <div className="setting-warning">
-                                        <span className="setting-warning__icon">⚠️</span>
-                                        <div className="setting-warning__content">
-                                            <span className="setting-warning__title">Modo Limitado</span>
-                                            <span className="setting-warning__text">
-                                                A aplicação está rodando sem privilégios de administrador.
-                                                Alguns recursos como reserva de espaço da barra (AppBar) podem não funcionar corretamente.
-                                                Para recursos completos, feche e execute como Administrador.
-                                            </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-
-                            {isAdmin && (
-                                <div className="setting-row setting-row--success">
-                                    <div className="setting-success">
-                                        <span className="setting-success__icon">✓</span>
-                                        <span className="setting-success__text">Executando com privilégios de administrador</span>
-                                    </div>
-                                </div>
-                            )}
-
-                            <div className="setting-row">
-                                <label className="setting-label">
-                                    <span>Iniciar com Windows</span>
-                                    <span className="setting-hint">Abrir automaticamente ao iniciar o sistema</span>
-                                </label>
-                                <div className="setting-control">
-                                    <label className="toggle">
-                                        <input
-                                            type="checkbox"
-                                            checked={autostartEnabled}
-                                            onChange={e => handleAutostartToggle(e.target.checked)}
-                                        />
-                                        <span className="toggle__slider"></span>
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div className="setting-row">
-                                <label className="setting-label">
-                                    <span>Resetar configurações</span>
-                                    <span className="setting-hint">Apaga perfil/config/cache e recria o Default do zero</span>
-                                </label>
-                                <div className="setting-control">
-                                    <button
-                                        className="btn btn--danger"
-                                        disabled={factoryResetting}
-                                        onClick={() => {
-                                            setFactoryResetError(null)
-                                            setShowFactoryResetConfirm(true)
-                                        }}
-                                    >
-                                        {factoryResetting ? 'Resetando...' : 'Factory Reset'}
-                                    </button>
-                                </div>
-                            </div>
-
-                            {showFactoryResetConfirm && (
-                                <div className="settings-reset">
-                                    <div className="settings-reset__title">Confirmação</div>
-                                    <div className="settings-reset__text">
-                                        Isso vai apagar perfis/config/cache e recriar tudo do zero.
-                                        {factoryResetError ? `\n\nErro: ${factoryResetError}` : ''}
-                                    </div>
-                                    <div className="settings-reset__actions">
-                                        <button
-                                            className="btn btn--secondary"
-                                            disabled={factoryResetting}
-                                            onClick={() => {
-                                                setShowFactoryResetConfirm(false)
-                                                setFactoryResetError(null)
-                                            }}
-                                        >
-                                            Cancelar
-                                        </button>
-                                        <button
-                                            className="btn btn--danger"
-                                            disabled={factoryResetting}
-                                            onClick={handleFactoryReset}
-                                        >
-                                            Confirmar
-                                        </button>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
+                        <SystemTab
+                            isAdmin={isAdmin}
+                            autostartEnabled={autostartEnabled}
+                            factoryResetting={factoryResetting}
+                            showFactoryResetConfirm={showFactoryResetConfirm}
+                            factoryResetError={factoryResetError}
+                            onAutostartToggle={handleAutostartToggle}
+                            onFactoryResetClick={() => {
+                                setFactoryResetError(null)
+                                setShowFactoryResetConfirm(true)
+                            }}
+                            onFactoryResetConfirm={handleFactoryReset}
+                            onFactoryResetCancel={() => {
+                                setShowFactoryResetConfirm(false)
+                                setFactoryResetError(null)
+                            }}
+                        />
                     )}
                 </div>
 
