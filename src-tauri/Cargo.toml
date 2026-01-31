@@ -23,7 +23,7 @@ wmi = "0.14"
 ureq = { version = "2", features = ["json"] }
 tauri-plugin-autostart = "2.5.1"
 tauri-plugin-single-instance = "2.3.6"
-dirs = "5"
+dirs = "6"
 tauri-plugin-clipboard-manager = "2"
 
 [target.'cfg(windows)'.dependencies]
