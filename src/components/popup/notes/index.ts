@@ -1,6 +1,7 @@
 export { NotesEditMode } from './NotesEditMode'
-export { NotesListView } from './NotesListView'
-export { NotesViewMode } from './NotesViewMode'
 export { renderInline, snippetLine, tokenizeInline } from './notesHelpers'
+export { NotesListView } from './NotesListView'
+export { NotesPreview } from './NotesPreview'
+export { NotesViewMode } from './NotesViewMode'
 export { getSaveLabel, useNotes } from './useNotes'
 
