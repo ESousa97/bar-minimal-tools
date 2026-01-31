@@ -2,9 +2,10 @@
 
 Minimalist Windows taskbar with real-time hardware monitoring, built with **Tauri + React + TypeScript + Rust**.
 
-[![CI](https://github.com/BarMinimal/bar-minimal-tools/actions/workflows/ci.yml/badge.svg)](https://github.com/BarMinimal/bar-minimal-tools/actions/workflows/ci.yml)
-[![Security Audit](https://github.com/BarMinimal/bar-minimal-tools/actions/workflows/security.yml/badge.svg)](https://github.com/BarMinimal/bar-minimal-tools/actions/workflows/security.yml)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![CI](https://img.shields.io/github/actions/workflow/status/ESousa97/bar-minimal-tools/ci.yml?style=flat)](https://github.com/ESousa97/bar-minimal-tools/actions/workflows/ci.yml)
+[![Security Audit](https://img.shields.io/github/actions/workflow/status/ESousa97/bar-minimal-tools/security.yml?style=flat)](https://github.com/ESousa97/bar-minimal-tools/actions/workflows/security.yml)
+[![CodeFactor](https://www.codefactor.io/repository/github/esousa97/bar-minimal-tools/badge?style=flat)](https://www.codefactor.io/repository/github/esousa97/bar-minimal-tools)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
 
 ---
 
