@@ -1,0 +1,35 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Capability for the main window",
+  "windows": [
+    "main",
+    "storage-popup",
+    "cpu-popup",
+    "ram-popup",
+    "gpu-popup",
+    "network-popup",
+    "audio-popup",
+    "headset-popup",
+    "media-popup",
+    "weather-popup",
+    "calendar-popup",
+    "settings-popup",
+    "power-popup",
+    "folders-popup",
+    "dev-color-popup"
+  ],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:window:allow-close",
+    "core:event:default",
+    "core:event:allow-emit",
+    "core:event:allow-listen",
+    "opener:default",
+    "clipboard-manager:allow-write-text",
+    "autostart:allow-enable",
+    "autostart:allow-disable",
+    "autostart:allow-is-enabled"
+  ]
+}

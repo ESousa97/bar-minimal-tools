@@ -1,0 +1,60 @@
+/* Taskbar */
+.taskbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: var(--bar-height);
+    /* Proportional sizing for widgets based on current bar height */
+    --widget-gap: clamp(4px, calc((var(--bar-height) - 24px) * 0.12 + 4px), 12px);
+    --widget-padding-x: clamp(8px, calc((var(--bar-height) - 24px) * 0.32 + 8px), 18px);
+    --widget-padding-y: clamp(4px, calc((var(--bar-height) - 24px) * 0.20 + 4px), 14px);
+    --font-size-xs: clamp(10px, calc((var(--bar-height) - 24px) * 0.08 + 10px), 13px);
+    --font-size-sm: clamp(11px, calc((var(--bar-height) - 24px) * 0.10 + 11px), 14px);
+    --font-size-base: clamp(12px, calc((var(--bar-height) - 24px) * 0.12 + 12px), 16px);
+    --font-size-lg: clamp(13px, calc((var(--bar-height) - 24px) * 0.14 + 13px), 18px);
+    --bar-icon-size: clamp(14px, calc((var(--bar-height) - 24px) * 0.28 + 14px), 22px);
+    --bar-icon-lg: clamp(20px, calc((var(--bar-height) - 24px) * 0.60 + 20px), 36px);
+
+    background: var(--bar-bg);
+    backdrop-filter: blur(var(--blur-amount));
+    border-bottom: 1px solid var(--bar-border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    user-select: none;
+    -webkit-app-region: drag;
+    margin: 0;
+}
+
+.taskbar__section {
+    display: flex;
+    align-items: center;
+    gap: var(--widget-gap);
+    -webkit-app-region: no-drag;
+    min-width: 0;
+    perspective: 900px;
+    perspective-origin: 50% 50%;
+}
+
+.taskbar__section--left {
+    justify-content: flex-start;
+    flex: 1 1 auto;
+    overflow: hidden;
+}
+
+.taskbar__section--center {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.taskbar__section--right {
+    justify-content: flex-end;
+    flex: 0 0 auto;
+}
+
+.taskbar__section--left .widget-wrapper {
+    flex-shrink: 0;
+}

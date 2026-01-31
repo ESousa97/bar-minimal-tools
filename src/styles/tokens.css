@@ -1,0 +1,59 @@
+/* ================================================
+   Bar Minimal Tools - Design Tokens
+   ================================================ */
+
+:root {
+    /* Colors - Dark Theme */
+    --bar-bg: rgba(15, 15, 20, 0.92);
+    --bar-border: rgba(255, 255, 255, 0.08);
+
+    --text-primary: #e4e4e7;
+    --text-secondary: #a1a1aa;
+    --text-muted: #71717a;
+
+    --accent-cyan: #22d3ee;
+    --accent-purple: #a855f7;
+    --accent-green: #22c55e;
+    --accent-orange: #f97316;
+    --accent-red: #ef4444;
+    --accent-blue: #3b82f6;
+
+    /* Semantic Colors */
+    --color-cpu: var(--accent-cyan);
+    --color-ram: var(--accent-purple);
+    --color-gpu: var(--accent-green);
+    --color-storage: var(--accent-orange);
+    --color-network: var(--accent-blue);
+    --color-audio: #ec4899;
+    --color-headset: #a855f7;
+    --color-clock: var(--text-secondary);
+
+    /* Layout */
+    --bar-height: 32px;
+    --widget-gap: 4px;
+    --widget-padding-x: 8px;
+    --widget-padding-y: 4px;
+    --border-radius: 4px;
+
+    /* Typography */
+    --font-family: 'Inter', 'Segoe UI', -apple-system, sans-serif;
+    --font-size-xs: 10px;
+    --font-size-sm: 11px;
+    --font-size-base: 12px;
+    --font-size-lg: 13px;
+
+    /* Effects */
+    --blur-amount: 20px;
+    --transition-fast: 0.1s ease;
+    --transition-normal: 0.15s ease;
+}
+
+/* Light Theme */
+[data-theme='light'] {
+    --bar-bg: rgba(245, 245, 250, 0.92);
+    --bar-border: rgba(0, 0, 0, 0.08);
+
+    --text-primary: #18181b;
+    --text-secondary: #52525b;
+    --text-muted: #a1a1aa;
+}

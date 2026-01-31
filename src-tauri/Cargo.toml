@@ -1,0 +1,57 @@
+[package]
+name = "bar-minimal-tools"
+version = "0.1.0"
+description = "A minimalist Windows taskbar with hardware monitoring"
+authors = ["BarMinimal Team"]
+edition = "2021"
+
+[lib]
+name = "bar_minimal_tools_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+chrono = { version = "0.4", features = ["serde"] }
+wmi = "0.14"
+ureq = { version = "2", features = ["json"] }
+tauri-plugin-autostart = "2.5.1"
+tauri-plugin-single-instance = "2.3.6"
+dirs = "5"
+tauri-plugin-clipboard-manager = "2"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.58", features = [
+    "Win32_Foundation",
+    "Win32_System_SystemInformation",
+    "Win32_System_Performance",
+    "Win32_System_Threading",
+    "Win32_Security",
+    "Win32_UI_Shell",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_HiDpi",
+    "Win32_Graphics_Gdi",
+    "Win32_Media_Audio",
+    "Win32_Media_Audio_Endpoints",
+    "Win32_System_Com",
+    "Win32_System_Variant",
+    "Win32_Devices_FunctionDiscovery",
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_System_LibraryLoader",
+    "Media_Control",
+    "Storage_Streams",
+    "Foundation",
+    "Foundation_Collections",
+    "UI_Notifications_Management"
+] }
+nvml-wrapper = "0.10"
+libloading = "0.8"
+base64 = "0.22"
+png = "0.17"

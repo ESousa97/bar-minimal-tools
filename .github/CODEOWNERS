@@ -1,0 +1,8 @@
+# Default code owners
+* @BarMinimal-Team
+
+# Frontend
+/src/ @BarMinimal-Team
+
+# Rust backend
+/src-tauri/ @BarMinimal-Team

@@ -1,0 +1,41 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Source files
+*.ts text eol=lf
+*.tsx text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+
+# Rust files
+*.rs text eol=lf
+*.toml text eol=lf
+
+# Scripts
+*.sh text eol=lf
+*.bat text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
+*.icns binary
+*.dll binary
+*.exe binary
+*.wasm binary
+
+# Archives
+*.zip binary
+*.tar binary
+*.gz binary
+
+# Linguist language detection
+*.rs linguist-language=Rust
+*.tsx linguist-language=TypeScript
+*.ts linguist-language=TypeScript

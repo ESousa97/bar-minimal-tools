@@ -1,0 +1,22 @@
+# Clippy configuration for Bar Minimal Tools
+
+# Deny warnings in CI
+# Use: cargo clippy -- -D warnings
+
+# Allow certain lints that may be too strict
+#
+# cognitive_complexity - we have some complex Windows API interactions
+# too_many_arguments - Windows APIs often require many parameters
+# large_enum_variant - some Windows types have large variants
+
+[lints.clippy]
+# Pedantic but helpful
+pedantic = "warn"
+# Specific denies
+unwrap_used = "warn"
+expect_used = "warn"
+panic = "warn"
+# Specific allows
+cognitive_complexity = "allow"
+too_many_arguments = "allow"
+large_enum_variant = "allow"
