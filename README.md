@@ -13,9 +13,11 @@ Minimalist Windows taskbar with real-time hardware monitoring, built with **Taur
 
 - **Real-time hardware monitoring** (CPU, RAM, GPU, Storage, Network)
 - **Media controls** and **audio device management**
-- **Weather**, **notes**, **clock**, and **headset status** widgets
+- **Weather widget** (Open-Meteo API, free, no API key required)
+- **Notes**, **clock**, and **headset status** widgets
 - Native desktop performance with **Tauri**
 - Fully configurable widget layout and theme
+- Auto-detect location for weather via IP geolocation
 
 ---
 

@@ -23,7 +23,7 @@ export const WIDGET_DEFINITIONS: WidgetDefinition[] = [
   { id: 'notes-1', type: 'notes', label: 'Notas', defaultEnabled: true, defaultOrder: 89, section: 'right' },
   { id: 'audio-1', type: 'audio', label: 'Audio', defaultEnabled: true, defaultOrder: 90, section: 'right' },
   { id: 'headset-1', type: 'headset', label: 'Headset', defaultEnabled: true, defaultOrder: 91, section: 'right' },
-  { id: 'weather-1', type: 'weather', label: 'Weather', defaultEnabled: true, defaultOrder: 92, section: 'right' },
+  { id: 'weather-1', type: 'weather', label: 'Weather', defaultEnabled: false, defaultOrder: 92, section: 'right' },
   { id: 'clock-1', type: 'clock', label: 'Clock', defaultEnabled: true, defaultOrder: 93, section: 'right' },
 ]
 

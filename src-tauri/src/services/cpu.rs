@@ -15,12 +15,6 @@ pub struct CpuData {
     pub logical_cores: u32,
     /// Number of physical cores
     pub physical_cores: u32,
-    /// CPU temperature in Celsius (if available)
-    pub temperature_c: Option<f32>,
-    /// CPU power draw in Watts (if available)
-    pub power_draw_w: Option<f32>,
-    /// CPU voltage in mV (if available)
-    pub voltage_mv: Option<u32>,
     /// Current clock speed in MHz
     pub clock_mhz: Option<u32>,
 }
@@ -33,9 +27,6 @@ impl Default for CpuData {
             per_core_usage: vec![],
             logical_cores: 0,
             physical_cores: 0,
-            temperature_c: None,
-            power_draw_w: None,
-            voltage_mv: None,
             clock_mhz: None,
         }
     }
@@ -62,9 +53,6 @@ pub fn get_cpu_info_cached(cached: &CachedSystemData) -> CpuData {
     if cached.cpu_clock_mhz > 0 {
         data.clock_mhz = Some(cached.cpu_clock_mhz);
     }
-
-    // Temperature from WMI thermal zone
-    data.temperature_c = cached.cpu_temperature_c;
 
     // Fallback for empty name
     if data.name.is_empty() {

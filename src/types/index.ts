@@ -6,9 +6,6 @@ export interface CpuData {
     per_core_usage: number[]
     logical_cores: number
     physical_cores: number
-    temperature_c: number | null
-    power_draw_w: number | null
-    voltage_mv: number | null
     clock_mhz: number | null
 }
 

@@ -10,7 +10,6 @@ pub mod ram;
 pub mod storage;
 pub mod weather;
 pub mod windows;
-pub mod windows_thermal;
 pub mod wmi_service;
 
 pub use appbar::{

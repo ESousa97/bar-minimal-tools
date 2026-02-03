@@ -8,7 +8,6 @@ use std::time::{Duration, Instant};
 use wmi::{COMLibrary, Variant, WMIConnection};
 
 use crate::services::pdh;
-use crate::services::windows_thermal;
 
 /// NVIDIA GPU data from NVML
 #[derive(Clone, Debug, Default)]
@@ -40,7 +39,6 @@ pub struct CachedSystemData {
     pub cpu_name: String,
     pub cpu_usage: f32,
     pub cpu_clock_mhz: u32,
-    pub cpu_temperature_c: Option<f32>,
     pub gpu_name: String,
     pub gpu_vendor: String,
     pub gpu_usage_percent: f32,
@@ -127,11 +125,6 @@ impl WmiService {
                     new_data.cpu_name = cpu_data.0;
                     new_data.cpu_usage = cpu_data.1;
                     new_data.cpu_clock_mhz = cpu_data.2;
-                }
-
-                // CPU temperature via Windows APIs
-                if let Some(temp) = windows_thermal::get_windows_cpu_temperature() {
-                    new_data.cpu_temperature_c = Some(temp);
                 }
 
                 // GPU data (WMI fallback)
