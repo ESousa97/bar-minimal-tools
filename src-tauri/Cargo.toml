@@ -54,7 +54,7 @@ windows = { version = "0.58", features = [
 nvml-wrapper = "0.11"
 libloading = "0.9"
 base64 = "0.22"
-png = "0.17"
+png = "0.18"
 
 [lints.clippy]
 # Allow certain lints for Windows API complexity
