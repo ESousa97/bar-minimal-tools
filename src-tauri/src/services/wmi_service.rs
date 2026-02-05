@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::{Duration, Instant};
-use wmi::{COMLibrary, Variant, WMIConnection};
+use wmi::{Variant, WMIConnection};
 
 use crate::services::pdh;
 
@@ -90,16 +90,8 @@ impl WmiService {
         let is_running = Arc::clone(&self.is_running);
 
         thread::spawn(move || {
-            // Initialize COM in this thread
-            let com_con = match COMLibrary::new() {
-                Ok(c) => c,
-                Err(e) => {
-                    eprintln!("Failed to initialize COM: {}", e);
-                    return;
-                }
-            };
-
-            let wmi_con = match WMIConnection::new(com_con) {
+            // Create WMI connection (COM is initialized internally in wmi 0.18+)
+            let wmi_con = match WMIConnection::new() {
                 Ok(w) => w,
                 Err(e) => {
                     eprintln!("Failed to create WMI connection: {}", e);
