@@ -186,8 +186,12 @@ fn fetch_weather_blocking(lat: f64, lon: f64) -> WeatherData {
                     wind_deg: current.wind_direction_10m.unwrap_or(0),
                     clouds: current.cloud_cover.unwrap_or(0),
                     visibility: 10000,
-                    sunrise: parse_iso_time(daily.sunrise.as_ref().and_then(|v: &Vec<String>| v.first())),
-                    sunset: parse_iso_time(daily.sunset.as_ref().and_then(|v: &Vec<String>| v.first())),
+                    sunrise: parse_iso_time(
+                        daily.sunrise.as_ref().and_then(|v: &Vec<String>| v.first()),
+                    ),
+                    sunset: parse_iso_time(
+                        daily.sunset.as_ref().and_then(|v: &Vec<String>| v.first()),
+                    ),
                 }
             }
             Err(e) => {
