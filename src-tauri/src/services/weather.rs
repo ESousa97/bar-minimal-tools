@@ -138,7 +138,7 @@ fn fetch_weather_blocking(lat: f64, lon: f64) -> WeatherData {
     );
 
     match ureq::get(&url).call() {
-        Ok(response) => match response.into_json::<OpenMeteoResponse>() {
+        Ok(response) => match response.into_body().read_json::<OpenMeteoResponse>() {
             Ok(data) => {
                 let current = data.current.unwrap_or(OpenMeteoCurrent {
                     temperature_2m: None,
@@ -171,12 +171,12 @@ fn fetch_weather_blocking(lat: f64, lon: f64) -> WeatherData {
                     temp_min: daily
                         .temperature_2m_min
                         .as_ref()
-                        .and_then(|v| v.first().copied())
+                        .and_then(|v: &Vec<f64>| v.first().copied())
                         .unwrap_or(0.0),
                     temp_max: daily
                         .temperature_2m_max
                         .as_ref()
-                        .and_then(|v| v.first().copied())
+                        .and_then(|v: &Vec<f64>| v.first().copied())
                         .unwrap_or(0.0),
                     humidity: current.relative_humidity_2m.unwrap_or(0),
                     pressure: current.surface_pressure.unwrap_or(0.0) as u32,
@@ -186,8 +186,12 @@ fn fetch_weather_blocking(lat: f64, lon: f64) -> WeatherData {
                     wind_deg: current.wind_direction_10m.unwrap_or(0),
                     clouds: current.cloud_cover.unwrap_or(0),
                     visibility: 10000,
-                    sunrise: parse_iso_time(daily.sunrise.as_ref().and_then(|v| v.first())),
-                    sunset: parse_iso_time(daily.sunset.as_ref().and_then(|v| v.first())),
+                    sunrise: parse_iso_time(
+                        daily.sunrise.as_ref().and_then(|v: &Vec<String>| v.first()),
+                    ),
+                    sunset: parse_iso_time(
+                        daily.sunset.as_ref().and_then(|v: &Vec<String>| v.first()),
+                    ),
                 }
             }
             Err(e) => {
@@ -247,13 +251,13 @@ pub fn get_current_location() -> LocationData {
     let url = "https://ipinfo.io/json";
 
     match ureq::get(url).call() {
-        Ok(response) => match response.into_json::<IpInfoResponse>() {
+        Ok(response) => match response.into_body().read_json::<IpInfoResponse>() {
             Ok(data) => {
                 // Parse "lat,lon" format
                 let (lat, lon) = data
                     .loc
                     .as_ref()
-                    .and_then(|loc| {
+                    .and_then(|loc: &String| {
                         let parts: Vec<&str> = loc.split(',').collect();
                         if parts.len() == 2 {
                             Some((
