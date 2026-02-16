@@ -51,7 +51,7 @@ windows = { version = "0.58", features = [
     "Foundation_Collections",
     "UI_Notifications_Management"
 ] }
-nvml-wrapper = "0.11"
+nvml-wrapper = "0.12"
 libloading = "0.9"
 base64 = "0.22"
 png = "0.18"
